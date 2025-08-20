@@ -1,0 +1,79 @@
+# ----------------------
+# Python
+# ----------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.pdb
+*.egg
+*.egg-info/
+dist/
+build/
+*.so
+venv/
+.env
+
+# ----------------------
+# Editor / IDE
+# ----------------------
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.DS_Store
+
+# ----------------------
+# Logs / Reports
+# ----------------------
+*.log
+*.out
+*.tmp
+*.bak
+
+# ----------------------
+# Docker
+# ----------------------
+docker-compose.override.yml
+*.env
+**/docker/.env
+**/infra/.env
+**/backend/.env
+**/frontend/.env
+
+# Ignore Docker volumes (opcional, dependendo do seu setup)
+volumes/
+
+# ----------------------
+# Node / Frontend
+# ----------------------
+node_modules/
+dist/
+build/
+*.lock
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ----------------------
+# Python Packaging / Distribution
+# ----------------------
+pip-wheel-metadata/
+*.egg-info/
+*.egg
+*.manifest
+*.spec
+
+# ----------------------
+# Jupyter / Notebook
+# ----------------------
+.ipynb_checkpoints/
+
+# ----------------------
+# Sistema
+# ----------------------
+Thumbs.db
+.DS_Store

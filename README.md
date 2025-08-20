@@ -13,7 +13,7 @@ O sistema permite o gerenciamento de eventos científicos e suas edições, alé
 ## Tecnologias
 - **Linguagens**: Python, JavaScript/TypeScript, HTML, CSS
 - **Frameworks**: FastAPI (backend), React + Vite (frontend)  
-- **Banco de Dados**: PostgreSQL  
+- **Banco de Dados**: PostgreSQL (via Docker)
 - **Versionamento e colaboração**: GitHub  
 - **Ferramenta de IA**: GitHub Copilot (modo agentic)  
 
