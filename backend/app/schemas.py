@@ -13,8 +13,9 @@ class EventoRead(BaseModel):
     nome: str
     slug: str
 
-    class Config:
-        orm_mode = True
+    model_config = {
+        "from_attributes": True  # <- substitui orm_mode
+    }
 
 # ----------------------
 # Edição
@@ -28,8 +29,9 @@ class EditionRead(BaseModel):
     evento_id: int
     ano: int
 
-    class Config:
-        orm_mode = True
+    model_config = {
+        "from_attributes": True  # <- substitui orm_mode
+    }
 
 # ----------------------
 # Autor
@@ -43,8 +45,9 @@ class AuthorRead(BaseModel):
     nome: str
     sobrenome: str
 
-    class Config:
-        orm_mode = True
+    model_config = {
+        "from_attributes": True  # <- substitui orm_mode
+    }
 
 # ----------------------
 # Artigo
@@ -66,5 +69,6 @@ class ArticleRead(BaseModel):
     edicao_id: int
     authors: list[AuthorRead] = []
 
-    class Config:
-        orm_mode = True
+    model_config = {
+        "from_attributes": True  # <- substitui orm_mode
+    }
