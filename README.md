@@ -21,6 +21,8 @@ O sistema permite o gerenciamento de eventos científicos e suas edições, alé
 - **Backend**: API REST bem definida, responsável por gerenciar eventos, edições e artigos, com persistência em banco de dados relacional.  
 - **Frontend**: Aplicação web interativa, consumindo a API para exibir eventos, artigos e páginas personalizadas de autores.  
 
+## Ferramenta de IA
+Optamos por usar o Github Copilot no modo Agentic
 
 
 ## Pré-requisitos e Instalação
