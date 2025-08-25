@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from .database import Base, engine, SessionLocal
 from .models import Event, Edition, Article, Author, artigo_autor
 from .schemas import EventoCreate, EventoRead, EditionCreate, EditionRead, AuthorCreate, AuthorRead, ArticleCreate, ArticleRead
+from fastapi.middleware.cors import CORSMiddleware
 
 # Cria tabelas
 Base.metadata.create_all(bind=engine)
@@ -98,3 +99,12 @@ def criar_artigo(artigo: ArticleCreate, db: Session = Depends(get_db)):
 @app.get("/artigos", response_model=list[ArticleRead])
 def listar_artigos(db: Session = Depends(get_db)):
     return db.query(Article).all()
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Or restrict to ["http://localhost:3000"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)

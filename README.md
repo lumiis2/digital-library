@@ -5,10 +5,10 @@ Uma biblioteca digital de artigos científicos desenvolvida como projeto da disc
 O sistema permite o gerenciamento de eventos científicos e suas edições, além do cadastro de artigos (manualmente ou em massa via BibTeX). Usuários poderão pesquisar artigos por título, autor ou evento, acessar páginas dedicadas para eventos, edições e autores, e receber notificações por e-mail sobre novos artigos.
 
 ## Integrantes
-- Adler Faria  
-- Bruna Luiz  
-- Luisa Lopes Carvalhaes  
-- Rafael Paniago  
+- Adler Faria  (Backend)
+- Bruna Luiz  (Frontend)
+- Luisa Lopes Carvalhaes  (FullStack)
+- Rafael Paniago  (FullStack)
 
 ## Tecnologias
 - **Linguagens**: Python, JavaScript/TypeScript, HTML, CSS
