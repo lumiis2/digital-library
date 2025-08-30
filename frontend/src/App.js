@@ -18,6 +18,7 @@ function App() {
     fetch("http://localhost:8000/artigos")
       .then((res) => res.json())
       .then((data) => {
+        console.log(data);
         setArtigos(data);
         setLoading(false);
       }) 
