@@ -19,7 +19,12 @@ const ArticlesPage = ({ artigos = [], loading, error }) => {
                            `${author.nome} ${author.sobrenome}`.toLowerCase().includes(searchTerm.toLowerCase())
                          );
     const matchesArea = selectedArea === "all" || artigo.area === selectedArea;
-    return matchesSearch && matchesArea;
+    
+    if(searchTerm.trim() !== ""){
+      return matchesSearch;
+    }
+
+    return matchesArea;
   });
 
   // pega 3 artigos de destaque (aqui só pego os 3 primeiros como exemplo)
@@ -64,6 +69,7 @@ const ArticlesPage = ({ artigos = [], loading, error }) => {
                 onChange={(e) => setSelectedArea(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
+                <option value="none">Nenhum</option>
                 <option value="all">Todas as áreas</option>
                 {areas.map(area => (
                   <option key={area} value={area}>{area}</option>
