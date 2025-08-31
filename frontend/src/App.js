@@ -4,6 +4,7 @@ import Navigation from './components/common/Navigation';
 import HomePage from './pages/HomePage';
 import ArticlesPage from './pages/ArticlesPage';
 import AuthorsPage from './pages/AuthorsPage';
+import LoginPage from './pages/LoginPage';
 // import EventsPage from './pages/EventsPage';
 // import EditionsPage from './pages/EditionsPage';
 // import { useApi } from './hooks/useApi';
@@ -54,6 +55,10 @@ function App() {
 
       {currentPage === 'authors' && (
         <AuthorsPage data={autores} loading={loading} error={null}/>
+      )}
+
+      {currentPage === 'login' &&(
+        <LoginPage/>
       )}
     </div>
   );

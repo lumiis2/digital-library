@@ -7,6 +7,7 @@ const Navigation = ({ currentPage, onNavigate }) => {
     { id: 'articles', label: 'Artigos', icon: BookIcon },
     { id: 'authors', label: 'Autores', icon: UserIcon },
     { id: 'categories', label: 'Categorias', icon: FolderIcon },
+    { id: 'login', label: "Login", icon: UserIcon},
   ];
 
   return (

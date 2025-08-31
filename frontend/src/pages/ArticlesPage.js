@@ -22,6 +22,7 @@ const ArticlesPage = ({ artigos = [], loading, error }) => {
       return matchesSearch;
     }
 
+    // Resolver: quando seleciona a area "Nenhum" aparecem todos os artigos
     const matchesArea = selectedArea === "none" || artigo.area === selectedArea;
 
     return matchesArea;
