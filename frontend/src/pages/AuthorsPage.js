@@ -31,7 +31,7 @@ const AuthorsPage = ({ data: authors, loading, error }) => {
             Buscar autor
           </label>
           <div className="relative max-w-md">
-            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <SearchIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               placeholder="Nome, instituição ou área..."

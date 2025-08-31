@@ -1,12 +1,13 @@
 import React from 'react';
-import { BookIcon, UserIcon, FolderIcon, SearchIcon } from './Icons';
+import { BookIcon, UserIcon, FolderIcon, CalendarIcon } from './Icons';
 
 const Navigation = ({ currentPage, onNavigate }) => {
   const navItems = [
     { id: 'home', label: 'Início', icon: null },
     { id: 'articles', label: 'Artigos', icon: BookIcon },
     { id: 'authors', label: 'Autores', icon: UserIcon },
-    { id: 'categories', label: 'Categorias', icon: FolderIcon },
+    { id: 'editions', label: 'Edições', icon: FolderIcon },
+    { id: 'events', label: 'Eventos', icon: CalendarIcon },
   ];
 
   return (

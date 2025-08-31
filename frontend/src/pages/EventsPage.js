@@ -1,47 +1,7 @@
 import React, { useState } from 'react';
-import { SearchIcon, CalendarIcon } from '../components/common/Icons';
+import { SearchIcon} from '../components/common/Icons';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-
-const EventCard = ({ event }) => (
-  <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 overflow-hidden">
-    <div className="p-6">
-      <div className="flex items-center mb-4">
-        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center mr-4">
-          <CalendarIcon className="w-6 h-6 text-white" />
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">
-            {event.nome}
-          </h3>
-          {event.slug && (
-            <p className="text-sm text-gray-600 uppercase tracking-wider">
-              {event.slug}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        {event.descricao && (
-          <p className="text-sm text-gray-600">
-            {event.descricao}
-          </p>
-        )}
-        
-        <div className="flex items-center justify-between text-sm pt-2">
-          <span className="text-gray-500">
-            ID: {event.id}
-          </span>
-          {event.edicoes_count && (
-            <span className="text-blue-600 bg-blue-50 px-2 py-1 rounded-full text-xs">
-              {event.edicoes_count} edições
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
-  </div>
-);
+import EventCard from '../components/cards/EventCard';
 
 const EventsPage = ({ data: events, loading, error }) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -69,7 +29,7 @@ const EventsPage = ({ data: events, loading, error }) => {
             Buscar evento
           </label>
           <div className="relative max-w-md">
-            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <SearchIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               placeholder="Nome do evento ou sigla..."
