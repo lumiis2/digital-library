@@ -9,12 +9,13 @@ const AuthorsPage = ({ data: authors, loading, error }) => {
   if (loading) return <LoadingSpinner message="Carregando autores..." />;
   if (error) return <div className="text-center py-12 text-red-600">Erro: {error}</div>;
 
-  const filteredAuthors = authors.filter(author => 
+  const filteredAuthors = searchTerm.trim() !== "" 
+  ? authors.filter(author => 
     author.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     author.sobrenome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     author.instituicao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     author.area_expertise?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ) :[];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -31,7 +32,7 @@ const AuthorsPage = ({ data: authors, loading, error }) => {
             Buscar autor
           </label>
           <div className="relative max-w-md">
-            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <SearchIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               placeholder="Nome, instituição ou área..."

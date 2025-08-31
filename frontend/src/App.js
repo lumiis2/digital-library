@@ -3,18 +3,20 @@ import React, { useState, useEffect } from 'react';
 import Navigation from './components/common/Navigation';
 import HomePage from './pages/HomePage';
 import ArticlesPage from './pages/ArticlesPage';
-// import AuthorsPage from './pages/AuthorsPage';
+import AuthorsPage from './pages/AuthorsPage';
 // import EventsPage from './pages/EventsPage';
 // import EditionsPage from './pages/EditionsPage';
 // import { useApi } from './hooks/useApi';
 // import { apiEndpoints } from './utils/api';
 
 function App() {
+  const [autores, setAutores] = useState([]);
   const [artigos, setArtigos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState('home');
 
   useEffect(() => {
+    // Buscar artigos
     fetch("http://localhost:8000/artigos")
       .then((res) => res.json())
       .then((data) => {
@@ -23,6 +25,18 @@ function App() {
         setLoading(false);
       }) 
       .catch(() => setLoading(false));
+
+    // Buscar autores
+    fetch("http://localhost:8000/autores")
+      .then((res) => res.json())
+      .then((data) => {
+        setAutores(data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Erro ao buscar autores: ", error);
+        setLoading(false);
+      })
   }, []);
 
   return (
@@ -36,6 +50,10 @@ function App() {
       
       {currentPage === 'articles' && (
         <ArticlesPage artigos={artigos} loading={loading} />
+      )}
+
+      {currentPage === 'authors' && (
+        <AuthorsPage data={autores} loading={loading} error={null}/>
       )}
     </div>
   );
