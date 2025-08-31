@@ -10,6 +10,14 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Digital Library API")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # Or restrict to ["http://localhost:3000"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Dependência de sessão
 def get_db():
     db = SessionLocal()
@@ -100,11 +108,3 @@ def criar_artigo(artigo: ArticleCreate, db: Session = Depends(get_db)):
 def listar_artigos(db: Session = Depends(get_db)):
     return db.query(Article).all()
 
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Or restrict to ["http://localhost:3000"]
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)

@@ -1,22 +1,22 @@
 # Frontend requirements - React + TailwindCSS
 
 # Node.js (versão recomendada)
-node >= 18.0.0
-npm >= 9.0.0
+node >= 1.2
+npm >= 0.1
 
 # React
-react = 18.2.0
-react-dom = 18.2.0
-react-scripts = 5.0.1
+react
+#react-dom 
+#react-scripts
 
 # Tailwind CSS
-tailwindcss = 3.3.2
-postcss = 8.4.24
-autoprefixer = 10.4.14
+tailwindcss
+#postcss 
+autoprefixer
 
 # Optional utilities
-@tailwindcss/forms = 0.5.3
-@tailwindcss/typography = 0.5.9
+#@tailwindcss/forms = 0.5.3
+#@tailwindcss/typography = 0.5.9
 
 # TUTORIAL: To set up Tailwind CSS, run the following command to generate the configuration files:
 # inside teh frontend directory
