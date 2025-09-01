@@ -5,6 +5,7 @@ import HomePage from './pages/HomePage';
 import ArticlesPage from './pages/ArticlesPage';
 import AuthorsPage from './pages/AuthorsPage';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 // import EventsPage from './pages/EventsPage';
 // import EditionsPage from './pages/EditionsPage';
 // import { useApi } from './hooks/useApi';
