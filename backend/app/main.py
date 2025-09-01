@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from .database import Base, engine, SessionLocal
-from .models import Event, Edition, Article, Author, artigo_autor
-from .schemas import EventoCreate, EventoRead, EditionCreate, EditionRead, AuthorCreate, AuthorRead, ArticleCreate, ArticleRead
+from .models import Event, Edition, Article, Author, artigo_autor, User
+from .schemas import EventoCreate, EventoRead, EditionCreate, EditionRead, AuthorCreate, AuthorRead, ArticleCreate, ArticleRead, UserCreate, UserRead
 from fastapi.middleware.cors import CORSMiddleware
 
 # Cria tabelas
@@ -108,3 +108,21 @@ def criar_artigo(artigo: ArticleCreate, db: Session = Depends(get_db)):
 def listar_artigos(db: Session = Depends(get_db)):
     return db.query(Article).all()
 
+# ----------------------
+# Usuários
+# ----------------------
+def criar_usuario(artigo: UserCreate, db: Session = Depends(get_db)):
+    novo_usuario = User(
+        name=artigo.name,
+        idade=artigo.idade,
+        email=artigo.email,
+        senha=artigo.senha
+    )
+    db.add(novo_usuario)
+    db.commit()
+    db.refresh(novo_usuario)
+    return novo_usuario
+
+@app.get("/usuarios", response_model=list[UserRead])
+def listar_user(db: Session = Depends(get_db)):
+    return db.query(User).all()

@@ -77,6 +77,16 @@ class ArticleRead(BaseModel):
 # Usuário
 # ----------------------
 class UserCreate(BaseModel):
+    id: int
     name: str
-    idade: int
     email: str
+    senha: int
+
+class UserRead(BaseModel):
+    id: int
+    name: str
+    email: str
+
+    model_config = {
+        "from_attributes": True  # <- substitui orm_mode
+    }
