@@ -1,9 +1,12 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from .database import Base, engine, SessionLocal
 from .models import Event, Edition, Article, Author, artigo_autor, User
 from .schemas import EventoCreate, EventoRead, EditionCreate, EditionRead, AuthorCreate, AuthorRead, ArticleCreate, ArticleRead, UserCreate, UserRead
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import IntegrityError
+import hashlib
+
 
 # Cria tabelas
 Base.metadata.create_all(bind=engine)
@@ -12,7 +15,10 @@ app = FastAPI(title="Digital Library API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Or restrict to ["http://localhost:3000"]
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        ],  # Or restrict to ["http://localhost:3000"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -111,15 +117,19 @@ def listar_artigos(db: Session = Depends(get_db)):
 # ----------------------
 # Usuários
 # ----------------------
-def criar_usuario(artigo: UserCreate, db: Session = Depends(get_db)):
-    novo_usuario = User(
-        name=artigo.name,
-        idade=artigo.idade,
-        email=artigo.email,
-        senha=artigo.senha
-    )
+def sha256(s: str) -> str:
+    return hashlib.sha256(s.encode("utf-8")).hexdigest()
+
+@app.post("/usuarios", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+def criar_usuario(user: UserCreate, db: Session = Depends(get_db)):
+    hashed = sha256(user.password)             # simples (melhore com bcrypt quando possível)
+    novo_usuario = User(nome=user.nome, email=user.email, senha_hash=hashed)
     db.add(novo_usuario)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="E-mail já cadastrado")
     db.refresh(novo_usuario)
     return novo_usuario
 
