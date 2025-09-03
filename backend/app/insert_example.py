@@ -108,7 +108,7 @@ if __name__ == "__main__":
     clear_database(cursor)
 
     # Arquivo BibTeX
-    bib_file_path = '../uploads/bibtexex.bib'
+    bib_file_path = '../../uploads/bibtexex.bib'
     process_bib_file(cursor, bib_file_path)
 
     conn.commit()
