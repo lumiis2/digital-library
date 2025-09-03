@@ -36,10 +36,8 @@ venv/
 # Docker
 # ----------------------
 docker-compose.override.yml
-*.env
 **/docker/.env
 **/infra/.env
-**/backend/.env
 **/frontend/.env
 volumes/
 
