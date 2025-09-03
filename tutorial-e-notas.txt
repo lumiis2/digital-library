@@ -36,22 +36,46 @@ tp1-engsoft/
 └─ README.md
 
 
-Como criar o banco de dados:
-1. Instalar o Docker
-2. Instalar o PostgreSQL via docker com docker-compose up -d
-3. Abrir o terminal do Postgre com docker exec -it digital_library_db psql -U postgres
----> faça um sudo antes ou configure usuário:
-     sudo groupadd docker
-     sudo usermod -aG docker $USER
+# TUTORIAL BACKEND E BANCO DE DADOS
+1. Instalar o Docker:
+sudo apt update
+sudo apt install docker.io -y
+sudo systemctl enable --now docker
+sudo apt install docker-compose -y
 
-4. Crie a base de dados (ou importe, não sei ainda)
+docker --version
+docker-compose --version
 
-5. Rode o main.py com python -m app.main
+2. Configure seu usuário:
+sudo groupadd docker
+sudo usermod -aG docker $USER
+
+3. Coloque o PostgreSQL para funcionar via docker com
+cd infra
+docker-compose up -d
+
+3.1. Teste se deu certo com `docker ps`
+3.2. caso queria, para rodar comando SQL na base de dados, abrir o terminal do Postgre com `docker exec -it digital_library_db psql -U postgres`
+
+4. Crie seu venv e baixe os requirements:
+python3 -m venv venv
+source venv/bin/activate
+pip install -r backend/requirements.txt
+
+5. Crie as tabelas com
+cd backend
+python3 -m app.main
+
+6. Adicione dados nas tabelas com 
+python insert_example.py de dentro de backend/app/ OU
+python -m backend.app.insert_example`
+
 Pronto seu BD e as tabelas forma criadas com sucesso! Agora vamos linkar na web e ver ser deu certo:
-6. Rode o comando uvicorn app.main:app --reload
+
+7. Rode o comando uvicorn app.main:app --reload
+
 Isso vai te dar um link para um localhost onde você vai ter uma mensagem de sucesso!
-Caso seu bd já tenha arquivos, nos endpoints como /arquivos já devem ter os dados...
-Caso nçao tenha dados, rode o insert_example.py com python -m backend.app.insert_example
+Caso seu bd já tenha arquivos, nos endpoints como `localhost.../arquivos` já devem ter os dados (IMPORTANTE FUNCIONAR)
 
 
 a) Banco de dados
@@ -69,3 +93,22 @@ Evento 1:N Edição
 Edição 1:N Artigo
 
 Artigo N:M Autor
+
+
+# TUTORIAL FRONTEND
+
+1. Baixe o React e o Routes
+npm install react
+npm install react-router-dom
+
+2. Baixe o Tailwindcss
+npm install -D tailwindcss
+- talvez precise instalar postcss autoprefixer
+
+3. Inicie
+npx tailwindcss init -p
+- here you are supposed to now have tailwind.config.js and postcss.config.js files created (you already have this seted up)
+- you can also check where is it donloaded with '' npm list tailwindcss ''
+
+4. Rode o frontend
+npm start
