@@ -79,3 +79,4 @@ pip-wheel-metadata/
 # ----------------------
 Thumbs.db
 .DS_Store
+.aider*
