@@ -9,11 +9,11 @@ const Navigation = () => {
   const navigate = useNavigate();
 
   const navItems = [
-    { id: 'home', label: 'Início', icon: null, path: '/' },
-    { id: 'articles', label: 'Artigos', icon: BookIcon, path: '/articles' },
-    { id: 'authors', label: 'Autores', icon: UserIcon, path: '/authors' },
-    { id: 'editions', label: 'Edições', icon: FolderIcon, path: '/editions' },
-    { id: 'events', label: 'Eventos', icon: CalendarIcon, path: '/events' },
+    { id: 'home', label: 'Início', icon: null },
+    { id: 'articles', label: 'Artigos', icon: BookIcon },
+    { id: 'authors', label: 'Autores', icon: UserIcon },
+    { id: 'categories', label: 'Categorias', icon: FolderIcon },
+    { id: 'login', label: "Login", icon: UserIcon},
   ];
 
   const handleLogout = () => {

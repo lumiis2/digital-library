@@ -1,217 +1,183 @@
-import React, { useState } from 'react';
-import { useAuth } from '../components/common/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+// src/pages/RegisterPage.jsx
+import React, { useState } from "react";
+import { EmailIcon } from "../components/common/Icons";
 
 const RegisterPage = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    affiliation: '',
-    orcid: ''
+  const [perfil, setPerfil] = useState(""); // "usuario" | "admin"
+  const [inputs, setInputs] = useState({
+    nome: "",
+    email: "",
+    senha: "",
   });
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const { register } = useAuth();
-  const navigate = useNavigate(); // React Router
+  const [erro, setErro] = useState("");
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const validateForm = () => {
-    const { name, email, password, confirmPassword } = formData;
-
-    if (!name || !email || !password || !confirmPassword) {
-      return 'Por favor, preencha todos os campos obrigatórios';
-    }
-
-    if (password !== confirmPassword) {
-      return 'As senhas não coincidem';
-    }
-
-    if (password.length < 6) {
-      return 'A senha deve ter pelo menos 6 caracteres';
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return 'Por favor, digite um email válido';
-    }
-
-    return null;
+    setInputs((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
-    setLoading(true);
+    setErro("");
 
-    const validationError = validateForm();
-    if (validationError) {
-      setError(validationError);
-      setLoading(false);
+    if (!perfil) {
+      setErro("Selecione um perfil.");
       return;
     }
 
-    const { confirmPassword, ...userData } = formData;
-    const result = await register(userData);
-
-    if (result.success) {
-      setSuccess('Cadastro realizado com sucesso! Redirecionando...');
-      setTimeout(() => {
-        navigate('/login'); // usar navigate do React Router
-      }, 2000);
-    } else {
-      setError(result.error || 'Cadastro falhou. Tente novamente.');
+    if (!inputs.nome || !inputs.email || !inputs.senha) {
+      setErro("Preencha todos os campos.");
+      return;
     }
 
-    setLoading(false);
+    setLoading(true);
+    try {
+      // Opção A: endpoint único enviando perfil no body:
+      const url = "http://127.0.0.1:8000/usuarios";
+
+      // Opção B: endpoints distintos (descomente se preferir)
+      // const url = perfil === "admin"
+      //   ? "http://127.0.0.1:8000/admins"
+      //   : "http://127.0.0.1:8000/usuarios";
+
+      const resposta = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome: inputs.nome,
+          email: inputs.email,
+          // no backend, armazene hash. Aqui enviamos a senha em texto
+          // e o backend deve fazer o hash com segurança.
+          senha: inputs.senha,
+          perfil, // "usuario" | "admin"
+        }),
+      });
+
+      if (!resposta.ok) {
+        const msg = await resposta.text();
+        throw new Error(msg || "Falha no cadastro.");
+      }
+
+      const data = await resposta.json();
+      alert(`Cadastro realizado! ID: ${data.id}`);
+      // opcional: limpar
+      setInputs({ nome: "", email: "", senha: "" });
+      setPerfil("");
+    } catch (err) {
+      setErro(err.message || "Erro de rede ao cadastrar.");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const disabled = loading;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Criar Conta</h2>
-            <p className="text-gray-600">Junte-se à nossa comunidade acadêmica</p>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-8">
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-bold text-gray-900">Cadastro</h1>
+            <div className="underline mt-2 w-16 h-1 bg-blue-600 rounded mx-auto"></div>
+            <p className="text-gray-500 mt-3">Crie sua conta</p>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-                {error}
+          <form onSubmit={handleSubmit}>
+            {/* Seleção de Perfil */}
+            <div className="mb-6">
+              <p className="text-sm font-medium text-gray-700 mb-2">
+                Selecione seu perfil
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPerfil("usuario")}
+                  className={`rounded-lg border px-4 py-2.5 text-sm transition ${
+                    perfil === "usuario"
+                      ? "border-blue-600 bg-blue-50 text-blue-700"
+                      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  Usuário
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPerfil("admin")}
+                  className={`rounded-lg border px-4 py-2.5 text-sm transition ${
+                    perfil === "admin"
+                      ? "border-blue-600 bg-blue-50 text-blue-700"
+                      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  Administrador
+                </button>
               </div>
-            )}
-            {success && (
-              <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg text-sm">
-                {success}
+              {!perfil && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Escolha um perfil para continuar.
+                </p>
+              )}
+            </div>
+
+            {/* Inputs */}
+            <div className="space-y-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  name="nome"
+                  value={inputs.nome}
+                  onChange={handleChange}
+                  placeholder="Nome"
+                  disabled={disabled}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
+                />
               </div>
-            )}
 
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                Nome Completo *
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="Digite seu nome completo"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                required
-              />
+              <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                  <EmailIcon className="w-5 h-5 text-gray-400" />
+                </span>
+                <input
+                  type="email"
+                  name="email"
+                  value={inputs.email}
+                  onChange={handleChange}
+                  placeholder="Email"
+                  disabled={disabled}
+                  className="w-full rounded-lg border border-gray-300 bg-white pl-10 pr-4 py-2.5 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
+                />
+              </div>
+
+              <div className="relative">
+                <input
+                  type="password"
+                  name="senha"
+                  value={inputs.senha}
+                  onChange={handleChange}
+                  placeholder="Senha"
+                  disabled={disabled}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
+                />
+              </div>
             </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email *
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="Digite seu email"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                required
-              />
-            </div>
+            {erro && <p className="text-red-600 text-sm mt-4">{erro}</p>}
 
-            <div>
-              <label htmlFor="affiliation" className="block text-sm font-medium text-gray-700 mb-2">
-                Afiliação
-              </label>
-              <input
-                type="text"
-                id="affiliation"
-                name="affiliation"
-                value={formData.affiliation}
-                onChange={handleChange}
-                placeholder="Universidade, Empresa, Instituição"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              />
+            <div className="mt-6">
+              <button
+                type="submit"
+                disabled={disabled || !perfil}
+                className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {loading ? "Cadastrando..." : "Criar conta"}
+              </button>
             </div>
-
-            <div>
-              <label htmlFor="orcid" className="block text-sm font-medium text-gray-700 mb-2">
-                ORCID ID (Opcional)
-              </label>
-              <input
-                type="text"
-                id="orcid"
-                name="orcid"
-                value={formData.orcid}
-                onChange={handleChange}
-                placeholder="0000-0000-0000-0000"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Senha *
-              </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Pelo menos 6 caracteres"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                Confirmar Senha *
-              </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="Confirme sua senha"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={loading}
-            >
-              {loading ? 'Criando Conta...' : 'Criar Conta'}
-            </button>
           </form>
-
-          {/* Footer */}
-          <div className="text-center mt-8">
-            <p className="text-gray-600">
-              Já tem uma conta?{' '}
-              <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
-                Entre aqui
-              </Link>
-            </p>
-          </div>
         </div>
+
+        <p className="text-center text-xs text-gray-500 mt-4">
+          © {new Date().getFullYear()} Digital Library
+        </p>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, ConfigDict
 from datetime import date
 
 # ----------------------
@@ -72,3 +72,18 @@ class ArticleRead(BaseModel):
     model_config = {
         "from_attributes": True  # <- substitui orm_mode
     }
+
+# ----------------------
+# Usuário
+# ----------------------
+class UserCreate(BaseModel):
+    nome: str
+    email: EmailStr
+    senha_hash: str
+
+class UserRead(BaseModel):
+    id: int
+    nome: str
+    email: EmailStr
+
+    model_config = ConfigDict(from_attributes=True)

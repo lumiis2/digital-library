@@ -1,3 +1,6 @@
+#----------------------
+# Serve para automatizar o processo de alimentar seu banco de dados acadêmico: em vez de cadastrar manualmente cada artigo, autor, edição e evento, você passa um arquivo BibTeX e o script insere tudo no PostgreSQL
+#----------------------
 import psycopg2
 from psycopg2.extras import execute_batch
 from datetime import datetime
@@ -6,6 +9,7 @@ import bibtexparser
 def connect_db():
     return psycopg2.connect(
         host="localhost",
+        port=5432, # Porta padrão do PostgreSQL
         database="digital_library",
         user="postgres",
         password="postgres"
@@ -100,18 +104,34 @@ def process_bib_file(cursor, file_path):
         article_data = (titulo, pdf_path, area, palavras_chave, edicao_id, data_publicacao)
         insert_article_with_authors(cursor, article_data, authors_str)
 
+
+#--- Inserir Usuarios no Database ---
+def inserir_usuario(cursor, user_data):
+    cursor.execute(
+        "INSERT INTO usuario (nome, email, senha_hash) VALUES (%s, %s, %s) RETURNING id",
+        user_data
+    )
+    
+    return cursor.fetchone()[0]
+
 if __name__ == "__main__":
     conn = connect_db()
     cursor = conn.cursor()
 
-    # Limpar banco antes de inserir
-    clear_database(cursor)
+    # Diagnóstico: onde estou conectado?
+    cursor.execute("select current_database(), inet_server_addr(), inet_server_port();")
+    print("Conectado em:", cursor.fetchone())
 
-    # Arquivo BibTeX
-    bib_file_path = '../../uploads/bibtexex.bib'
-    process_bib_file(cursor, bib_file_path)
+    try:
+        clear_database(cursor)  # cuidado: isso apaga as tabelas!
+        bib_file_path = '../uploads/bibtexex.bib'
+        process_bib_file(cursor, bib_file_path)
+        print("Importação concluída com sucesso!")
 
-    conn.commit()
-    cursor.close()
-    conn.close()
-    print("Importação concluída com sucesso!")
+        conn.commit()  # garante persistência
+    except Exception as e:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+        conn.close()
