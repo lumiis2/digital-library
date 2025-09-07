@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from .database import Base, engine, SessionLocal
 from .models import Event, Edition, Article, Author, artigo_autor
@@ -39,6 +39,12 @@ def read_root():
 # ----------------------
 @app.post("/eventos", response_model=EventoRead)
 def criar_evento(evento: EventoCreate, db: Session = Depends(get_db)):
+    evento_existente = db.query(Event).filter(Event.slug == evento.sigla).first()
+    if evento_existente:
+        raise HTTPException(
+            status_code = 400,
+            detail="Já existe um evento com essa sigla registrado no banco de dados"
+        )
     novo_evento = Event(nome=evento.nome, slug=evento.sigla)
     db.add(novo_evento)
     db.commit()
@@ -54,6 +60,12 @@ def listar_eventos(db: Session = Depends(get_db)):
 # ----------------------
 @app.post("/edicoes", response_model=EditionRead)
 def criar_edicao(edicao: EditionCreate, db: Session = Depends(get_db)):
+    edicao_existente = db.query(Edition).filter(Edition.ano == edicao.ano and Edition.evento_id == edicao.evento_id)
+    if edicao_existente:
+        raise HTTPException(
+            status_code = 400,
+            detail = "Já existe um evento com essa sigla"
+        )
     nova_edicao = Edition(evento_id=edicao.evento_id, ano=edicao.ano)
     db.add(nova_edicao)
     db.commit()
@@ -69,6 +81,12 @@ def listar_edicoes(db: Session = Depends(get_db)):
 # ----------------------
 @app.post("/autores", response_model=AuthorRead)
 def criar_autor(autor: AuthorCreate, db: Session = Depends(get_db)):
+    autor_existente = db.query(Author).filter(Author.nome == autor.nome and Author.sobrenome == autor.sobrenome)
+    if autor_existente:
+        raise HTTPException(
+            status_code=400,
+            detail="Um autor de mesmo nome já está inserido no banco de dados"
+        )
     novo_autor = Author(nome=autor.nome, sobrenome=autor.sobrenome)
     db.add(novo_autor)
     db.commit()
