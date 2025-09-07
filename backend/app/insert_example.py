@@ -135,4 +135,3 @@ if __name__ == "__main__":
     finally:
         cursor.close()
         conn.close()
-    

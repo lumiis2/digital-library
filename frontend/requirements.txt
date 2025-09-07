@@ -1,26 +1,23 @@
 # Frontend requirements - React + TailwindCSS
 
 # Node.js (versão recomendada)
-node >= 1.2
-npm >= 0.1
+node 
+npm
 
 # React
 react
-#react-dom 
-#react-scripts
+eact-router-dom
+
 
 # Tailwind CSS
 tailwindcss
-#postcss 
 autoprefixer
 
-# Optional utilities
-#@tailwindcss/forms = 0.5.3
-#@tailwindcss/typography = 0.5.9
 
 # TUTORIAL: To set up Tailwind CSS, run the following command to generate the configuration files:
 # inside teh frontend directory
 # npm install or npm install react react-dom react-scripts
+# npm install react-router-dom
 # npm install -D tailwindcss postcss autoprefixer
 # npx tailwindcss init -p
 # here you are supposed to now have tailwind.config.js and postcss.config.js files created (you already have this seted up)

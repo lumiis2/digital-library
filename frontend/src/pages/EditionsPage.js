@@ -1,51 +1,7 @@
 import React, { useState } from 'react';
-import { SearchIcon, FolderIcon } from '../components/common/Icons';
+import { SearchIcon} from '../components/common/Icons';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-
-const EditionCard = ({ edition }) => (
-  <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 overflow-hidden">
-    <div className="p-6">
-      <div className="flex items-center mb-4">
-        <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center mr-4">
-          <FolderIcon className="w-6 h-6 text-white" />
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">
-            Edição {edition.ano}
-          </h3>
-          {edition.evento && (
-            <p className="text-sm text-gray-600">
-              {edition.evento.nome}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <div className="text-sm">
-          <span className="font-medium text-gray-700">Ano:</span>
-          <span className="text-gray-600 ml-1">{edition.ano}</span>
-        </div>
-        
-        <div className="text-sm">
-          <span className="font-medium text-gray-700">Evento ID:</span>
-          <span className="text-gray-600 ml-1">{edition.evento_id}</span>
-        </div>
-        
-        <div className="flex items-center justify-between text-sm pt-2">
-          <span className="text-gray-500">
-            ID: {edition.id}
-          </span>
-          {edition.artigos_count && (
-            <span className="text-green-600 bg-green-50 px-2 py-1 rounded-full text-xs">
-              {edition.artigos_count} artigos
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
-  </div>
-);
+import EditionCard from '../components/cards/EditionCard';
 
 const EditionsPage = ({ data: editions, loading, error }) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -58,7 +14,7 @@ const EditionsPage = ({ data: editions, loading, error }) => {
   
   const filteredEditions = editions.filter(edition => {
     const matchesSearch = edition.ano?.toString().includes(searchTerm) ||
-                         edition.evento?.nome?.toLowerCase().includes(searchTerm.toLowerCase());
+                         edition.evento_id?.nome?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesYear = selectedYear === "all" || edition.ano?.toString() === selectedYear;
     return matchesSearch && matchesYear;
   });
@@ -80,7 +36,7 @@ const EditionsPage = ({ data: editions, loading, error }) => {
                 Buscar
               </label>
               <div className="relative">
-                <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <SearchIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Ano ou nome do evento..."
