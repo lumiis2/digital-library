@@ -1,3 +1,6 @@
+#----------------------
+# Serve para automatizar o processo de alimentar seu banco de dados acadêmico: em vez de cadastrar manualmente cada artigo, autor, edição e evento, você passa um arquivo BibTeX e o script insere tudo no PostgreSQL
+#----------------------
 import psycopg2
 from psycopg2.extras import execute_batch
 from datetime import datetime
@@ -6,7 +9,7 @@ import bibtexparser
 def connect_db():
     return psycopg2.connect(
         host="localhost",
-        port="5432",
+        port=5432, # Porta padrão do PostgreSQL
         database="digital_library",
         user="postgres",
         password="postgres"
@@ -102,6 +105,7 @@ def process_bib_file(cursor, file_path):
         insert_article_with_authors(cursor, article_data, authors_str)
 
 
+#--- Inserir Usuarios no Database ---
 def inserir_usuario(cursor, user_data):
     cursor.execute(
         "INSERT INTO usuario (nome, email, senha_hash) VALUES (%s, %s, %s) RETURNING id",
@@ -114,6 +118,7 @@ if __name__ == "__main__":
     conn = connect_db()
     cursor = conn.cursor()
 
+    # Diagnóstico: onde estou conectado?
     cursor.execute("select current_database(), inet_server_addr(), inet_server_port();")
     print("Conectado em:", cursor.fetchone())
 

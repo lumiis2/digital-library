@@ -13,13 +13,19 @@ const ArticlesPage = ({ artigos = [], loading, error }) => {
   const areas = [...new Set((artigos || []).map(a => a.area))];
 
   const filteredArtigos = artigos.filter(artigo => {
-    const matchesSearch = artigo.titulo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         artigo.palavras_chave?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         artigo.authors?.some(author => 
-                           `${author.nome} ${author.sobrenome}`.toLowerCase().includes(searchTerm.toLowerCase())
-                         );
-    const matchesArea = selectedArea === "all" || artigo.area === selectedArea;
-    return matchesSearch && matchesArea;
+    if(searchTerm.trim().length > 0){
+      const matchesSearch = artigo.titulo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          artigo.palavras_chave?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          artigo.authors?.some(author => 
+                            `${author.nome} ${author.sobrenome}`.toLowerCase().includes(searchTerm.toLowerCase())
+                          );
+      return matchesSearch;
+    }
+
+    // Resolver: quando seleciona a area "Nenhum" aparecem todos os artigos
+    const matchesArea = selectedArea === "none" || artigo.area === selectedArea;
+
+    return matchesArea;
   });
 
   // pega 3 artigos de destaque (aqui só pego os 3 primeiros como exemplo)
@@ -64,7 +70,7 @@ const ArticlesPage = ({ artigos = [], loading, error }) => {
                 onChange={(e) => setSelectedArea(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="all">Todas as áreas</option>
+                <option value="none">Nenhum</option>
                 {areas.map(area => (
                   <option key={area} value={area}>{area}</option>
                 ))}
