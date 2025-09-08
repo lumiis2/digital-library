@@ -92,10 +92,10 @@ const Navigation = () => {
                 >
                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                     <span className="text-sm font-semibold text-blue-600">
-                      {user.name.charAt(0).toUpperCase()}
+                      {user.nome.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <span className="hidden sm:inline">{user.name}</span>
+                  <span className="hidden sm:inline">{user.nome}</span>
                   {isAdmin() && (
                     <span className="hidden sm:inline bg-purple-100 text-purple-800 px-2 py-0.5 rounded text-xs font-medium">
                       ADMIN

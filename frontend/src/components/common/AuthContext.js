@@ -33,55 +33,37 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+  try {
+    const response = await fetch('http://localhost:8000/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!response.ok) throw new Error('Login failed');
+    const data = await response.json();
+    setUser(data.user);
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
 
-      if (!response.ok) {
-        throw new Error('Login failed');
-      }
-
-      const data = await response.json();
-      
-      // Store token and user data
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      
-      setUser(data.user);
-      return { success: true };
-    } catch (error) {
-      console.error('Login error:', error);
-      return { success: false, error: error.message };
-    }
-  };
-
-  const register = async (userData) => {
-    try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration failed');
-      }
-
-      const data = await response.json();
-      return { success: true, message: data.message };
-    } catch (error) {
-      console.error('Registration error:', error);
-      return { success: false, error: error.message };
-    }
-  };
+const register = async (userData) => {
+  try {
+    const response = await fetch('http://localhost:8000/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
+    });
+    if (!response.ok) throw new Error('Registration failed');
+    const data = await response.json();
+    return { success: true, message: data.message };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
 
   const logout = () => {
     localStorage.removeItem('token');
