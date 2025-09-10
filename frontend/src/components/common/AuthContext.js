@@ -32,56 +32,52 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (email, password) => {
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+  const login = async (email, password, perfil) => {
+  try {
+    const response = await fetch('http://localhost:8000/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, perfil }),
+    });
 
-      if (!response.ok) {
-        throw new Error('Login failed');
+    if (!response.ok) {
+      // Tenta extrair mensagem específica do backend
+      let msg = "Login failed";
+      try {
+        const errData = await response.json();
+        if (errData.detail) {
+          msg = errData.detail;
+        }
+      } catch {
+        // fallback para mensagem padrão
       }
-
-      const data = await response.json();
-      
-      // Store token and user data
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      
-      setUser(data.user);
-      return { success: true };
-    } catch (error) {
-      console.error('Login error:', error);
-      return { success: false, error: error.message };
+      throw new Error(msg);
     }
-  };
 
-  const register = async (userData) => {
-    try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
+    const data = await response.json();
+    setUser(data.user);
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration failed');
-      }
-
-      const data = await response.json();
-      return { success: true, message: data.message };
-    } catch (error) {
-      console.error('Registration error:', error);
-      return { success: false, error: error.message };
-    }
-  };
+const register = async (userData) => {
+  try {
+    const response = await fetch('http://localhost:8000/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
+    });
+    if (!response.ok) throw new Error('Registration failed');
+    const data = await response.json();
+    return { success: true, message: data.message };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
 
   const logout = () => {
     localStorage.removeItem('token');
@@ -90,7 +86,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isAdmin = () => {
-    return user && user.role === 'admin';
+    return user && user.perfil === "admin";
   };
 
   const value = {

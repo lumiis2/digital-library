@@ -33,7 +33,7 @@ const RegisterPage = () => {
     setLoading(true);
     try {
       // Opção A: endpoint único enviando perfil no body:
-      const url = "http://127.0.0.1:8000/usuarios";
+      const url = "http://127.0.0.1:8000/api/auth/register";
 
       // Opção B: endpoints distintos (descomente se preferir)
       // const url = perfil === "admin"
@@ -48,7 +48,7 @@ const RegisterPage = () => {
           email: inputs.email,
           // no backend, armazene hash. Aqui enviamos a senha em texto
           // e o backend deve fazer o hash com segurança.
-          senha: inputs.senha,
+          senha_hash: inputs.senha,
           perfil, // "usuario" | "admin"
         }),
       });
@@ -59,7 +59,7 @@ const RegisterPage = () => {
       }
 
       const data = await resposta.json();
-      alert(`Cadastro realizado! ID: ${data.id}`);
+      alert(`Cadastro realizado! ID: ${data.user.id}`);
       // opcional: limpar
       setInputs({ nome: "", email: "", senha: "" });
       setPerfil("");
