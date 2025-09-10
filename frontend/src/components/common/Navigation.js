@@ -107,7 +107,7 @@ const Navigation = () => {
                   className="flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-floresta hover:bg-floresta hover:text-papel transition-colors border border-madeira shadow-sm"
                 >
                   <div className="w-8 h-8 bg-musgo rounded-full flex items-center justify-center select-none">
-                    <span className="text-papel font-bold">{user.name.charAt(0).toUpperCase()}</span>
+                    <span className="text-papel font-bold">{user.nome.charAt(0).toUpperCase()}</span>
                   </div>
                   <span className="hidden sm:inline">{user.nome}</span>
                   {isAdmin() && (

@@ -67,6 +67,10 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String(100), nullable=False)
     email = Column(String(255), unique=True, nullable=False, index=True)
-    senha_hash = Column(String(255), nullable=False)  # Para autenticação
-    # Aqui você pode armazenar preferências de notificação, eventos ou autores favoritos
-    # Exemplo simplificado: armazenar IDs de eventos que o usuário segue (pode ser outro relacionamento N:N)
+    senha_hash = Column(String(255), nullable=False)
+    perfil = Column(String(20), default="usuario")  # "usuario" ou "admin"
+    notificar_novos_artigos = Column(
+        Integer, default=1
+    )  # 1 = receber emails sobre novos artigos, 0 = não receber
+
+    # Futuramente, adicione outros campos de preferências conforme necessário

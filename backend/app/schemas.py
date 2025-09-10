@@ -85,5 +85,7 @@ class UserRead(BaseModel):
     id: int
     nome: str
     email: EmailStr
+    perfil: str
+    notificar_novos_artigos: int  # 1 = recebe emails, 0 = não recebe
 
     model_config = ConfigDict(from_attributes=True)

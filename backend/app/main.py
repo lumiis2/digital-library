@@ -141,10 +141,13 @@ SECRET_KEY = "your-secret-key"
 def sha256(s: str) -> str:
     return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
+ADMIN_EMAILS = {"luisalcarvalhaes@gmail.com", "outroadmin@email.com"}  # coloque os emails de admin aqui
+
 @app.post("/api/auth/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
+    perfil = "admin" if user.email in ADMIN_EMAILS else "usuario"
     hashed = sha256(user.senha_hash)
-    new_user = User(nome=user.nome, email=user.email, senha_hash=hashed)
+    new_user = User(nome=user.nome, email=user.email, senha_hash=hashed, perfil=perfil)
     db.add(new_user)
     try:
         db.commit()
@@ -154,13 +157,21 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return {"message": "Usuário registrado com sucesso", "user": UserRead.from_orm(new_user)}
 
+
 @app.post("/api/auth/login")
 def login(data: dict, db: Session = Depends(get_db)):
     email = data.get("email")
     password = data.get("password")
+    perfil = data.get("perfil")  # <-- receba o perfil do frontend
+
     user = db.query(User).filter(User.email == email).first()
     if not user or user.senha_hash != sha256(password):
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
+
+    # Se o usuário tentar logar como admin, mas não for admin
+    if perfil == "admin" and user.perfil != "admin":
+        raise HTTPException(status_code=403, detail="Você não tem permissão de admin")
+
     # Gera um token simples (para produção, use JWT com expiração)
     token = jwt.encode({"user_id": user.id, "email": user.email}, SECRET_KEY, algorithm="HS256")
-    return {"token": token, "user": UserRead.from_orm(user)}    
+    return {"token": token, "user": UserRead.from_orm(user)}

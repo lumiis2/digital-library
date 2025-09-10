@@ -31,11 +31,12 @@ const LoginPage = () => {
         setLoading(true);
         try {
             // Use o contexto!
-            const result = await login(inputs.email, inputs.senha_hash);
+            const result = await login(inputs.email, inputs.senha_hash, perfil);
+            
             if (result.success) {
                 navigate("/"); // Navigation será atualizado automaticamente!
             } else {
-                setErroLogin(result.error || "Falha no login.");
+                setErroLogin(result.error);
             }
             setInputs({ nome: "", email: "", senha_hash: "" });
             setPerfil("");
