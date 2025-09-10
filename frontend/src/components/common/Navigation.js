@@ -27,26 +27,26 @@ const Navigation = () => {
   };
 
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200">
+    <nav className="bg-papel border-b border-madeira shadow-md font-pixel">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <div className="flex items-center space-x-2">
-            <BookIcon />
-            <h1 className="text-xl font-bold text-gray-900">Digital Library</h1>
+          <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate('/')}>
+            <BookIcon className="w-8 h-8 text-floresta" />
+            <h1 className="text-2xl font-bold text-floresta select-none">Digital Library</h1>
           </div>
 
           {/* Navigation Items */}
-          <div className="hidden md:flex space-x-1">
+          <div className="hidden md:flex space-x-4">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
                 <button
                   key={item.id}
                   onClick={() => navigate(item.path)}
-                  className="px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-1 text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                  className="flex items-center space-x-1 px-4 py-2 rounded-lg text-floresta hover:bg-floresta hover:text-papel transition-colors font-semibold text-sm shadow-sm border border-madeira"
                 >
-                  {Icon && <Icon className="w-4 h-4" />}
+                  {Icon && <Icon className="w-5 h-5" />}
                   <span>{item.label}</span>
                 </button>
               );
@@ -56,11 +56,27 @@ const Navigation = () => {
             {isAuthenticated && isAdmin() && (
               <button
                 onClick={() => navigate('/admin')}
-                className="px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-1 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                className="flex items-center space-x-1 px-4 py-2 rounded-lg text-douradoSol hover:bg-douradoSol/90 hover:text-papel transition-colors font-semibold text-sm shadow-sm border border-madeira"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                  ></path>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  ></path>
                 </svg>
                 <span>Admin</span>
               </button>
@@ -70,16 +86,16 @@ const Navigation = () => {
           {/* Authentication Section */}
           <div className="flex items-center space-x-4">
             {!isAuthenticated ? (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3">
                 <button
                   onClick={() => navigate('/login')}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                  className="px-4 py-2 rounded-lg font-semibold text-floresta hover:bg-floresta hover:text-papel transition-colors border border-madeira shadow-sm"
                 >
                   Entrar
                 </button>
                 <button
                   onClick={() => navigate('/register')}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 rounded-lg font-semibold bg-douradoSol text-papel hover:bg-douradoSol/90 transition-colors shadow-sm border border-madeira"
                 >
                   Cadastrar
                 </button>
@@ -88,60 +104,76 @@ const Navigation = () => {
               <div className="relative">
                 <button
                   onClick={handleUserMenuToggle}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-floresta hover:bg-floresta hover:text-papel transition-colors border border-madeira shadow-sm"
                 >
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-semibold text-blue-600">
-                      {user.nome.charAt(0).toUpperCase()}
-                    </span>
+                  <div className="w-8 h-8 bg-musgo rounded-full flex items-center justify-center select-none">
+                    <span className="text-papel font-bold">{user.name.charAt(0).toUpperCase()}</span>
                   </div>
                   <span className="hidden sm:inline">{user.nome}</span>
                   {isAdmin() && (
-                    <span className="hidden sm:inline bg-purple-100 text-purple-800 px-2 py-0.5 rounded text-xs font-medium">
+                    <span className="hidden sm:inline bg-douradoSol text-floresta px-2 py-0.5 rounded text-xs font-bold select-none">
                       ADMIN
                     </span>
                   )}
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
 
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+                  <div className="absolute right-0 mt-2 w-48 bg-papel rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-50 border border-madeira">
                     <div className="py-1">
                       <button
-                        onClick={() => { navigate('/dashboard'); setIsUserMenuOpen(false); }}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => {
+                          navigate('/dashboard');
+                          setIsUserMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-floresta hover:bg-floresta hover:text-papel rounded transition-colors"
                       >
                         Dashboard
                       </button>
                       <button
-                        onClick={() => { navigate('/profile'); setIsUserMenuOpen(false); }}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => {
+                          navigate('/profile');
+                          setIsUserMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-floresta hover:bg-floresta hover:text-papel rounded transition-colors"
                       >
                         Perfil
                       </button>
                       <button
-                        onClick={() => { navigate('/my-articles'); setIsUserMenuOpen(false); }}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => {
+                          navigate('/my-articles');
+                          setIsUserMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-floresta hover:bg-floresta hover:text-papel rounded transition-colors"
                       >
                         Meus Artigos
                       </button>
                       {isAdmin() && (
                         <>
-                          <div className="border-t border-gray-100"></div>
+                          <div className="border-t border-madeira"></div>
                           <button
-                            onClick={() => { navigate('/admin'); setIsUserMenuOpen(false); }}
-                            className="block w-full text-left px-4 py-2 text-sm text-purple-700 hover:bg-purple-50"
+                            onClick={() => {
+                              navigate('/admin');
+                              setIsUserMenuOpen(false);
+                            }}
+                            className="block w-full text-left px-4 py-2 text-douradoSol hover:bg-douradoSol/90 hover:text-papel rounded transition-colors font-bold"
                           >
                             Painel Admin
                           </button>
                         </>
                       )}
-                      <div className="border-t border-gray-100"></div>
+                      <div className="border-t border-madeira"></div>
                       <button
                         onClick={handleLogout}
-                        className="block w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50"
+                        className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-100 rounded transition-colors font-semibold"
                       >
                         Sair
                       </button>
@@ -154,8 +186,14 @@ const Navigation = () => {
 
           {/* Mobile menu button */}
           <div className="md:hidden">
-            <button className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button className="p-2 rounded-md text-floresta hover:text-douradoSol hover:bg-papel transition-colors">
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
