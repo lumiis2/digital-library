@@ -14,17 +14,14 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check if user is logged in on component mount
+  // Recupera usuário ao carregar a aplicação
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
-    
     if (token && userData) {
       try {
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
+        setUser(JSON.parse(userData));
+      } catch {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
       }
@@ -32,75 +29,73 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
+  // 🔹 Login
   const login = async (email, password, perfil) => {
-  try {
-    const response = await fetch('http://localhost:8000/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, perfil }),
-    });
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, perfil }),
+      });
 
-    if (!response.ok) {
-      // Tenta extrair mensagem específica do backend
-      let msg = "Login failed";
-      try {
-        const errData = await response.json();
-        if (errData.detail) {
-          msg = errData.detail;
-        }
-      } catch {
-        // fallback para mensagem padrão
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Login failed');
       }
-      throw new Error(msg);
+
+      setUser(data.user);
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
     }
+  };
 
-    const data = await response.json();
-    setUser(data.user);
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("user", JSON.stringify(data.user));
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-};
+  // 🔹 Registro
+  const register = async (userData) => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+      });
 
-const register = async (userData) => {
-  try {
-    const response = await fetch('http://localhost:8000/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData),
-    });
-    if (!response.ok) throw new Error('Registration failed');
-    const data = await response.json();
-    return { success: true, message: data.message };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-};
+      const data = await response.json();
 
+      if (!response.ok) {
+        throw new Error(data.detail || 'Registration failed');
+      }
+
+      return { success: true, message: data.message };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  };
+
+  // 🔹 Logout
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
   };
 
-  const isAdmin = () => {
-    return user && user.perfil === "admin";
-  };
-
-  const value = {
-    user,
-    login,
-    register,
-    logout,
-    isAdmin,
-    isAuthenticated: !!user,
-    loading
-  };
+  const isAdmin = () => user?.perfil === 'admin';
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        register,
+        logout,
+        isAdmin,
+        isAuthenticated: !!user,
+        loading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
