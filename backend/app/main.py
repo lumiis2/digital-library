@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from .database import Base, engine, SessionLocal
 from .models import Event, Edition, Article, Author, artigo_autor, User
-from .schemas import EventoCreate, EventoRead, EditionCreate, EditionRead, AuthorCreate, AuthorRead, ArticleCreate, ArticleRead, UserCreate, UserRead
+from .schemas import EventoCreate, EventoRead, EditionCreate, EditionRead, AuthorCreate, AuthorRead, ArticleCreate, ArticleRead, UserCreate, UserRead, LoginRequest
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import IntegrityError
 import hashlib
@@ -19,11 +19,19 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "http://localhost:3001",
         ],  # Or restrict to ["http://localhost:3000"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+from fastapi.responses import JSONResponse
+
+@app.options("/{rest_of_path:path}")
+async def preflight_handler(rest_of_path: str = ""):
+    return JSONResponse(content={"message": "OK"})
+
 
 # Dependência de sessão
 def get_db():
@@ -159,10 +167,10 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 
 
 @app.post("/api/auth/login")
-def login(data: dict, db: Session = Depends(get_db)):
-    email = data.get("email")
-    password = data.get("password")
-    perfil = data.get("perfil")  # <-- receba o perfil do frontend
+def login(data: LoginRequest, db: Session = Depends(get_db)):
+    email = data.email
+    password = data.password
+    perfil = data.perfil  # <-- receba o perfil do frontend
 
     user = db.query(User).filter(User.email == email).first()
     if not user or user.senha_hash != sha256(password):
@@ -175,3 +183,7 @@ def login(data: dict, db: Session = Depends(get_db)):
     # Gera um token simples (para produção, use JWT com expiração)
     token = jwt.encode({"user_id": user.id, "email": user.email}, SECRET_KEY, algorithm="HS256")
     return {"token": token, "user": UserRead.from_orm(user)}
+
+@app.get("/usuarios", response_model=list[UserRead])
+def listar_usuarios(db: Session = Depends(get_db)):
+    return db.query(User).all()
