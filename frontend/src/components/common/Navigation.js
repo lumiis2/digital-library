@@ -149,12 +149,29 @@ const Navigation = () => {
                       </button>
                       <button
                         onClick={() => {
-                          navigate('/my-articles');
+                          if (isAdmin()) {
+                            navigate('/admin/articles');
+                          } else {
+                            navigate('/my-articles'); // Ajuste conforme a rota correta para usuários não admin
+                          }
                           setIsUserMenuOpen(false);
                         }}
                         className="block w-full text-left px-4 py-2 text-floresta hover:bg-floresta hover:text-papel rounded transition-colors"
                       >
-                        Meus Artigos
+                        Cadastrar Artigos
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (isAdmin()) {
+                            navigate('/admin/events');
+                          } else {
+                            navigate('/events'); // Ajuste conforme a rota correta para usuários não admin
+                          }
+                          setIsUserMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-floresta hover:bg-floresta hover:text-papel rounded transition-colors"
+                      >
+                        Cadastrar Eventos
                       </button>
                       {isAdmin() && (
                         <>

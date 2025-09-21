@@ -137,9 +137,15 @@ def criar_artigo(artigo: ArticleCreate, db: Session = Depends(get_db)):
 
     return novo_artigo
 
+#@app.get("/artigos", response_model=list[ArticleRead])
+#def listar_artigos(db: Session = Depends(get_db)):
+#    return db.query(Article).all()
 @app.get("/artigos", response_model=list[ArticleRead])
-def listar_artigos(db: Session = Depends(get_db)):
-    return db.query(Article).all()
+def listar_artigos(autor_id: int | None = None, db: Session = Depends(get_db)):
+    query = db.query(Article)
+    if autor_id:
+        query = query.join(Article.authors).filter(Author.id == autor_id)
+    return query.all()
 
 # ----------------------
 # Usuários

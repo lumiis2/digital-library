@@ -8,7 +8,11 @@ import EventsPage from './pages/EventsPage';
 import EditionsPage from './pages/EditionsPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import AdminArticlesPage from './pages/AdminArticlesPage';
+import NewArticlePage from './pages/NewArticlePage';  
+import AdminDashboard from './pages/AdminDashboard';
 import backgroundImage from './assets/background.png';
+import NewEventPage from './pages/NewEventPage';
 
 function App() {
   const [artigos, setArtigos] = useState([]);
@@ -75,6 +79,10 @@ function App() {
             <Route path="/editions" element={<EditionsPage data={edicoes} loading={loadingEdicoes} />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/my-articles" element={<AdminArticlesPage />} />
+            <Route path="/admin/articles" element={<NewArticlePage />} />
+            <Route path="/admin/events" element={<NewEventPage />} />
+            <Route path="/dashboard" element={<AdminDashboard />} />
           </Routes>
         </div>
       </div>
