@@ -6,7 +6,7 @@ O sistema permite o gerenciamento de eventos científicos e suas edições, alé
 
 ## Integrantes
 - Adler Faria  (Backend)
-- Bruna Luiz  (Frontend)
+- Bruna Luiz  (FullStack)
 - Luisa Lopes Carvalhaes  (FullStack)
 - Rafael Paniago  (FullStack)
 
