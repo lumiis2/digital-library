@@ -17,10 +17,11 @@ artigo_autor = Table(
 class Event(Base):
     __tablename__ = "evento"
     id = Column(Integer, primary_key=True, index=True)
+    admin_id = Column(Integer, ForeignKey("usuario.id"))
     slug = Column(String(64), unique=True, nullable=False, index=True)
     nome = Column(String(255), nullable=False)
     editions = relationship("Edition", back_populates="event")
-
+    
 
 class Edition(Base):
     __tablename__ = "edicao"
