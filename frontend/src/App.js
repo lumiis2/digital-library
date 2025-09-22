@@ -13,6 +13,7 @@ import NewArticlePage from './pages/NewArticlePage';
 import AdminDashboard from './pages/AdminDashboard';
 import backgroundImage from './assets/background.png';
 import NewEventPage from './pages/NewEventPage';
+import EditEventPage from './pages/EditEventPage';
 
 function App() {
   const [artigos, setArtigos] = useState([]);
@@ -83,6 +84,7 @@ function App() {
             <Route path="/admin/articles" element={<NewArticlePage />} />
             <Route path="/admin/events" element={<NewEventPage />} />
             <Route path="/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/events/:id/edit" element={<EditEventPage/>} />
           </Routes>
         </div>
       </div>

@@ -20,10 +20,16 @@ const AdminArticlesPage = () => {
       .then((data) => setArticles(data))
       .catch((err) => console.error(err));
 
-    // Buscar eventos
+    // Buscar eventos do admin
     fetch("http://localhost:8000/eventos")
       .then((res) => res.json())
-      .then((data) => setEvents(data))
+      .then((data) => {
+        setEvents(
+          user?.perfil === "admin"
+            ? data.filter((ev) => ev.admin_id === user.id)
+            : data
+        );
+      })
       .catch((err) => console.error(err));
   }, [user, isAdmin, navigate]);
 
@@ -130,9 +136,17 @@ const AdminArticlesPage = () => {
                   <h3 className="font-bold text-lg text-floresta mb-2">
                     {event.nome}
                   </h3>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-gray-700 mb-2">
                     <span className="font-semibold">Sigla:</span> {event.slug}
                   </p>
+
+                  {/* Botão de editar evento */}
+                  <button
+                    onClick={() => navigate(`/admin/events/${event.id}/edit`)}
+                    className="px-4 py-1 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition text-sm"
+                  >
+                    Editar
+                  </button>
                 </div>
               ))}
             </div>
