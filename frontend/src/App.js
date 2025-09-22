@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+   import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom'; // <-- adicione useNavigate
 import Navigation from './components/common/Navigation';
 import HomePage from './pages/HomePage';
@@ -14,6 +14,10 @@ import AdminDashboard from './pages/AdminDashboard';
 import backgroundImage from './assets/background.png';
 import NewEventPage from './pages/NewEventPage';
 import EditEventPage from './pages/EditEventPage';
+import EventDetailPage from './pages/EventDetailPage';
+import EditionDetailPage from './pages/EditionDetailPage';
+import AuthorDetailPage from './pages/AuthorDetailPage';
+import UserSettingsPage from './pages/UserSettingsPage';
 
 function App() {
   const [artigos, setArtigos] = useState([]);
@@ -85,6 +89,10 @@ function App() {
             <Route path="/admin/events" element={<NewEventPage />} />
             <Route path="/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/events/:id/edit" element={<EditEventPage/>} />
+            <Route path="/eventos/:slug" element={<EventDetailPage />} />
+            <Route path="/eventos/:slug/:ano" element={<EditionDetailPage />} />
+            <Route path="/autores/:slug" element={<AuthorDetailPage />} />
+            <Route path="/configuracoes" element={<UserSettingsPage />} />
           </Routes>
         </div>
       </div>

@@ -60,6 +60,7 @@ class Author(Base):
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String(100), index=True)
     sobrenome = Column(String(100), index=True)
+    slug = Column(String(200), unique=True, nullable=True, index=True)  # Slug amigável para URLs
     articles = relationship("Article", secondary="artigo_autor", back_populates="authors")
 
 

@@ -6,3 +6,5 @@ python-dotenv
 bibtexparser
 pydantic[email]
 pyjwt
+fastapi-mail
+aiosmtplib
