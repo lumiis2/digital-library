@@ -17,7 +17,7 @@ function App() {
   const [artigos, setArtigos] = useState([]);
   const [loadingArtigos, setLoading] = useState(true);
 
-  const [autores, setAutores] = useState([]);
+  //const [autores, setAutores] = useState([]);
   const [loadingAutores, setLoadingAutores] = useState(true);
 
   const [eventos, setEventos] = useState([]);
