@@ -7,12 +7,12 @@ module.exports = {
         pixel: ['PixelFont', 'sans-serif'],
       },
       colors: {
-        floresta: '#2E4630',
-        madeira: '#5C4033',
-        musgo: '#8B9A46',
-        azulLivro: '#2B4A83',
-        douradoSol: '#D9A441',
-        papel: '#F4EBD0',
+         preto: '#1A1A1A',    // floresta
+         cinza: '#2E2E2E',     // madeira
+         verde: '#9CA986',       //  musgo
+         azul: '#1E2A44',   // azulLivro
+         neblina: '#6B7A8F', // douradoSol
+         branco: '#FDFCF9',       // papel
       },
     },
   },

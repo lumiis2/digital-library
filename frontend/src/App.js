@@ -1,4 +1,4 @@
-   import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom'; // <-- adicione useNavigate
 import Navigation from './components/common/Navigation';
 import HomePage from './pages/HomePage';
