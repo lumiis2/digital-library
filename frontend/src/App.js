@@ -18,6 +18,7 @@ import EventDetailPage from './pages/EventDetailPage';
 import EditionDetailPage from './pages/EditionDetailPage';
 import AuthorDetailPage from './pages/AuthorDetailPage';
 import UserSettingsPage from './pages/UserSettingsPage';
+import NewEditionPage from './pages/NewEditionPage';
 
 function App() {
   const [artigos, setArtigos] = useState([]);
@@ -59,6 +60,8 @@ function App() {
       .catch(() => setLoadingEdicoes(false));
   }, []);
 
+  
+
   return (
     <div
       className="min-h-screen bg-cover bg-center bg-fixed"
@@ -93,6 +96,8 @@ function App() {
             <Route path="/eventos/:slug/:ano" element={<EditionDetailPage />} />
             <Route path="/autores/:slug" element={<AuthorDetailPage />} />
             <Route path="/configuracoes" element={<UserSettingsPage />} />
+            <Route path="/admin/edicoes/new" element={<NewEditionPage />} />
+            <Route path="/admin/edicoes/:id/edit" element={<NewEditionPage />} />
           </Routes>
         </div>
       </div>
