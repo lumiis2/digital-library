@@ -105,7 +105,9 @@ def read_root():
 # ----------------------
 @app.post("/eventos", response_model=EventoRead)
 def criar_evento(evento: EventoCreate, db: Session = Depends(get_db)):
-    evento_existente = db.query(Event).filter(Event.slug == evento.sigla and Event.admin_id == evento.admin_id).first()
+    evento_existente = db.query(Event).filter(
+        Event.slug == evento.sigla,
+        Event.admin_id == evento.admin_id).first()
     if evento_existente:
         raise HTTPException(
             status_code = 400,
@@ -116,6 +118,30 @@ def criar_evento(evento: EventoCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(novo_evento)
     return novo_evento
+
+# Atualizar edição
+@app.put("/edicoes/{edicao_id}", response_model=EditionRead)
+def atualizar_edicao(edicao_id: int, edicao: EditionCreate, db: Session = Depends(get_db)):
+    edicao_db = db.query(Edition).filter(Edition.id == edicao_id).first()
+    if not edicao_db:
+        raise HTTPException(status_code=404, detail="Edição não encontrada")
+    
+    edicao_db.ano = edicao.ano
+    edicao_db.evento_id = edicao.evento_id
+    db.commit()
+    db.refresh(edicao_db)
+    return edicao_db
+
+# Deletar edição
+@app.delete("/edicoes/{edicao_id}")
+def deletar_edicao(edicao_id: int, db: Session = Depends(get_db)):
+    edicao_db = db.query(Edition).filter(Edition.id == edicao_id).first()
+    if not edicao_db:
+        raise HTTPException(status_code=404, detail="Edição não encontrada")
+    
+    db.delete(edicao_db)
+    db.commit()
+    return {"message": "Edição deletada com sucesso"}
 
 @app.get("/eventos", response_model=list[EventoRead])
 def listar_eventos(db: Session = Depends(get_db)):
