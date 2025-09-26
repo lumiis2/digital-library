@@ -99,7 +99,7 @@ function NewEditionPage() {
 
       <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
         <label>
-          Ano:
+          Ano:git
           <input 
             type="number" 
             value={ano} 
