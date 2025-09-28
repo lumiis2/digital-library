@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from .database import Base, engine, SessionLocal
-from .models import Event, Edition, Article, Author, artigo_autor, User
-from .schemas import EventoCreate, EventoRead, EditionCreate, EditionRead, AuthorCreate, AuthorRead, ArticleCreate, ArticleRead, UserCreate, UserRead, LoginRequest
+from .models import Event, Edition, Article, Author, artigo_autor, User, Notification, EmailLog
+from .schemas import EventoCreate, EventoRead, EditionCreate, EditionRead, AuthorCreate, AuthorRead, ArticleCreate, ArticleRead, UserCreate, UserRead, LoginRequest, NotificationCreate, NotificationRead, NotificationSettings
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import IntegrityError
 import hashlib
@@ -11,6 +11,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import asyncio
 from typing import List
+from datetime import date
 
 
 # Configurações de email
@@ -429,5 +430,231 @@ def obter_preferencias_notificacao(user_id: int, db: Session = Depends(get_db)):
     
     return {
         "user_id": user_id,
-        "receber_notificacoes": False  # bool(user.notificar_novos_artigos)
+        "receber_notificacoes": bool(user.receive_notifications)
     }
+
+# ----------------------
+# Endpoints de Notificação para Autores
+# ----------------------
+@app.post("/usuarios/{user_id}/seguir-autor/{author_id}")
+def seguir_autor(user_id: int, author_id: int, db: Session = Depends(get_db)):
+    # Verificar se usuário existe
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    # Verificar se autor existe
+    author = db.query(Author).filter(Author.id == author_id).first()
+    if not author:
+        raise HTTPException(status_code=404, detail="Autor não encontrado")
+    
+    # Verificar se já segue o autor
+    existing = db.query(Notification).filter(
+        (Notification.user_id == user_id) & (Notification.author_id == author_id)
+    ).first()
+    
+    if existing:
+        # Reativar se estava desativado
+        db.query(Notification).filter(
+            (Notification.user_id == user_id) & (Notification.author_id == author_id)
+        ).update({"is_active": 1})
+        db.commit()
+        return {"message": f"Você voltou a seguir {author.nome} {author.sobrenome}"}
+    
+    # Criar nova notificação
+    from datetime import date
+    notification = Notification(
+        user_id=user_id,
+        author_id=author_id,
+        is_active=1,
+        created_at=date.today()
+    )
+    db.add(notification)
+    db.commit()
+    
+    return {"message": f"Agora você segue {author.nome} {author.sobrenome} e receberá emails quando ele publicar novos artigos!"}
+
+@app.delete("/usuarios/{user_id}/seguir-autor/{author_id}")
+def parar_de_seguir_autor(user_id: int, author_id: int, db: Session = Depends(get_db)):
+    notification = db.query(Notification).filter(
+        (Notification.user_id == user_id) & (Notification.author_id == author_id)
+    ).first()
+    
+    if not notification:
+        raise HTTPException(status_code=404, detail="Você não segue este autor")
+    
+    author = db.query(Author).filter(Author.id == author_id).first()
+    if not author:
+        raise HTTPException(status_code=404, detail="Autor não encontrado")
+    
+    # Update using database update instead of attribute assignment
+    db.query(Notification).filter(
+        (Notification.user_id == user_id) & (Notification.author_id == author_id)
+    ).update({"is_active": 0})
+    db.commit()
+    
+    return {"message": f"Você parou de seguir {author.nome} {author.sobrenome}"}
+
+# Endpoint para seguir/parar de seguir autor (com autenticação)
+@app.post("/seguir-autor")
+def seguir_autor_auth(
+    request: dict,
+    db: Session = Depends(get_db)
+):
+    # Para simplicidade, vamos usar o user_id = 1 como padrão
+    # Em um sistema real, extrairíamos o user_id do token JWT
+    user_id = 1
+    author_id = request.get("autor_id")
+    acao = request.get("acao")  # "seguir" ou "parar_seguir"
+    
+    if not author_id or not acao:
+        raise HTTPException(
+            status_code=400, 
+            detail="É necessário informar autor_id e acao"
+        )
+    
+    # Verificar se o autor existe
+    author = db.query(Author).filter(Author.id == author_id).first()
+    if not author:
+        raise HTTPException(status_code=404, detail="Autor não encontrado")
+    
+    # Verificar se já existe uma notificação
+    existing_notification = db.query(Notification).filter(
+        (Notification.user_id == user_id) & (Notification.author_id == author_id)
+    ).first()
+    
+    if acao == "seguir":
+        if existing_notification:
+            # Reativar se estava desativada
+            db.query(Notification).filter(
+                (Notification.user_id == user_id) & (Notification.author_id == author_id)
+            ).update({"is_active": 1})
+        else:
+            # Criar nova notificação
+            new_notification = Notification(
+                user_id=user_id,
+                author_id=author_id,
+                is_active=1
+            )
+            db.add(new_notification)
+        
+        db.commit()
+        return {"mensagem": f"Você agora está seguindo {author.nome} {author.sobrenome}!"}
+    
+    elif acao == "parar_seguir":
+        if existing_notification:
+            # Desativar notificação
+            db.query(Notification).filter(
+                (Notification.user_id == user_id) & (Notification.author_id == author_id)
+            ).update({"is_active": 0})
+            db.commit()
+        
+        return {"mensagem": f"Você parou de seguir {author.nome} {author.sobrenome}"}
+    
+    else:
+        raise HTTPException(
+            status_code=400, 
+            detail="Ação inválida. Use 'seguir' ou 'parar_seguir'"
+        )
+
+# Endpoint para listar autores seguidos (com autenticação)
+@app.get("/autores-seguidos")
+def listar_autores_seguidos_auth(db: Session = Depends(get_db)):
+    # Para simplicidade, vamos usar o user_id = 1 como padrão
+    # Em um sistema real, extrairíamos o user_id do token JWT
+    user_id = 1
+    
+    notifications = db.query(Notification).filter(
+        (Notification.user_id == user_id) & (Notification.is_active == 1)
+    ).all()
+    
+    autores_seguidos = []
+    for notif in notifications:
+        author = db.query(Author).filter(Author.id == notif.author_id).first()
+        if author:
+            autores_seguidos.append({
+                "id": author.id,
+                "nome": author.nome,
+                "sobrenome": author.sobrenome,
+                "slug": author.slug,
+                "seguindo_desde": notif.created_at
+            })
+    
+    return {
+        "total": len(autores_seguidos),
+        "autores": autores_seguidos
+    }
+
+# ----------------------
+# Sistema de Envio de Emails
+# ----------------------
+async def enviar_notificacao_novo_artigo(article_id: int, db: Session):
+    """Envia notificação por email quando um novo artigo é publicado"""
+    try:
+        # Buscar o artigo
+        article = db.query(Article).filter(Article.id == article_id).first()
+        if not article:
+            return
+        
+        # Buscar autores do artigo
+        for author in article.authors:
+            # Buscar usuários que seguem este autor
+            notifications = db.query(Notification).filter(
+                (Notification.author_id == author.id) & (Notification.is_active == 1)
+            ).all()
+            
+            for notification in notifications:
+                user = db.query(User).filter(
+                    (User.id == notification.user_id) & (User.receive_notifications == 1)
+                ).first()
+                
+                if user:
+                    # Verificar se já enviou email para este artigo/usuário
+                    email_sent = db.query(EmailLog).filter(
+                        (EmailLog.user_id == user.id) & (EmailLog.article_id == article.id)
+                    ).first()
+                    
+                    if not email_sent:
+                        # Enviar email
+                        try:
+                            await send_notification_email(
+                                str(user.email), 
+                                f"{str(author.nome)} {str(author.sobrenome)}", 
+                                str(article.titulo), 
+                                str(article.edition.event.nome) if article.edition and article.edition.event else "Evento"
+                            )
+                            
+                            # Registrar envio
+                            log = EmailLog(
+                                user_id=user.id,
+                                article_id=article.id,
+                                author_id=author.id,
+                                sent_at=date.today(),
+                                email_subject=f"Novo artigo: {str(article.titulo)}",
+                                status="sent"
+                            )
+                            db.add(log)
+                            
+                        except Exception as e:
+                            # Registrar falha
+                            log = EmailLog(
+                                user_id=user.id,
+                                article_id=article.id,
+                                author_id=author.id,
+                                sent_at=date.today(),
+                                email_subject=f"Novo artigo: {str(article.titulo)}",
+                                status="failed"
+                            )
+                            db.add(log)
+                            print(f"Erro ao enviar email para {str(user.email)}: {e}")
+        
+        db.commit()
+        
+    except Exception as e:
+        print(f"Erro no sistema de notificação: {e}")
+
+@app.post("/admin/enviar-notificacoes/{article_id}")
+async def trigger_notifications(article_id: int, db: Session = Depends(get_db)):
+    """Endpoint para disparar manualmente as notificações de um artigo"""
+    await enviar_notificacao_novo_artigo(article_id, db)
+    return {"message": "Notificações enviadas com sucesso"}

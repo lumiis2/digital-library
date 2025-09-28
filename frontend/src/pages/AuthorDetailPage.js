@@ -14,6 +14,61 @@ function AuthorDetailPage() {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedYear, setSelectedYear] = useState('all');
+  const [following, setFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+
+  const checkIfFollowing = async () => {
+    if (!autor) return;
+    try {
+      const response = await fetch('http://localhost:8000/autores-seguidos', {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const isFollowing = data.autores.some(author => author.id === autor.id);
+        setFollowing(isFollowing);
+      }
+    } catch (error) {
+      console.error('Erro ao verificar status de seguir:', error);
+    }
+  };
+
+  const handleFollowToggle = async () => {
+    if (!autor) return;
+    
+    setFollowLoading(true);
+    try {
+      const response = await fetch('http://localhost:8000/seguir-autor', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          autor_id: autor.id,
+          acao: following ? 'parar_seguir' : 'seguir'
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setFollowing(!following);
+        
+        // Exibir mensagem de sucesso
+        alert(data.mensagem || 'Ação realizada com sucesso!');
+      } else {
+        const errorData = await response.json();
+        alert(errorData.detail || 'Erro ao realizar ação');
+      }
+    } catch (error) {
+      console.error('Erro ao seguir/parar de seguir:', error);
+      alert('Erro ao realizar ação. Tente novamente.');
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchAutorEArtigos = async () => {
@@ -55,6 +110,13 @@ function AuthorDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSlug, navigate]);
 
+  // Verificar se está seguindo o autor após carregar os dados
+  useEffect(() => {
+    if (autor) {
+      checkIfFollowing();
+    }
+  }, [autor]);
+
   if (loading) return <LoadingSpinner message="Carregando autor..." />;
   if (error) return <div className="text-center py-12 text-red-600">Erro: {error}</div>;
   if (!autor) return <div className="text-center py-12 text-gray-600">Autor não encontrado.</div>;
@@ -95,12 +157,41 @@ function AuthorDetailPage() {
             <span className="text-gray-900">{autor.nome} {autor.sobrenome}</span>
           </div>
           
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            {autor.nome} {autor.sobrenome}
-          </h1>
-          <p className="text-lg text-gray-600">
-            {totalArtigos} {totalArtigos === 1 ? 'artigo publicado' : 'artigos publicados'}
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                {autor.nome} {autor.sobrenome}
+              </h1>
+              <p className="text-lg text-gray-600">
+                {totalArtigos} {totalArtigos === 1 ? 'artigo publicado' : 'artigos publicados'}
+              </p>
+            </div>
+            
+            {/* Botão Seguir/Parar de Seguir */}
+            <div>
+              <button
+                onClick={handleFollowToggle}
+                disabled={followLoading}
+                className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+                  following 
+                    ? 'bg-gray-200 text-gray-800 hover:bg-gray-300' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {followLoading 
+                  ? 'Carregando...' 
+                  : following 
+                    ? '✓ Seguindo' 
+                    : '+ Seguir Autor'
+                }
+              </button>
+              {following && (
+                <p className="text-sm text-gray-500 mt-1 text-right">
+                  📧 Você receberá emails sobre novos artigos
+                </p>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Filtros */}

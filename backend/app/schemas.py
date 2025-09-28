@@ -87,8 +87,27 @@ class UserRead(BaseModel):
     id: int
     nome: str
     email: EmailStr
+    receive_notifications: Optional[int] = 1
 
     model_config = ConfigDict(from_attributes=True)
+
+# ----------------------
+# Notificações
+# ----------------------
+class NotificationCreate(BaseModel):
+    author_id: int
+
+class NotificationRead(BaseModel):
+    id: int
+    user_id: int
+    author_id: int
+    is_active: int
+    created_at: date
+
+    model_config = ConfigDict(from_attributes=True)
+
+class NotificationSettings(BaseModel):
+    receive_notifications: bool
 
 class LoginRequest(BaseModel):
     email: EmailStr
