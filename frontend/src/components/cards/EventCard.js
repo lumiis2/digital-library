@@ -1,11 +1,21 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CalendarIcon, ArrowRightIcon } from '../common/Icons';
 
-const EventCard = ({ event, onClick }) => (
-  <div
-    className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 overflow-hidden cursor-pointer group"
-    onClick={() => onClick && onClick(event)}
-  >
+const EventCard = ({ event }) => {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (event.slug) {
+      navigate(`/eventos/${event.slug}`);
+    }
+  };
+
+  return (
+    <div
+      className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 overflow-hidden cursor-pointer group"
+      onClick={handleClick}
+    >
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -39,7 +49,8 @@ const EventCard = ({ event, onClick }) => (
         )}
       </div>
     </div>
-  </div>
-);
+    </div>
+  );
+};
 
 export default EventCard;

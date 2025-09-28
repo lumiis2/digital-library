@@ -94,6 +94,7 @@ function App() {
             <Route path="/admin/events/:id/edit" element={<EditEventPage/>} />
             <Route path="/eventos/:slug" element={<EventDetailPage />} />
             <Route path="/eventos/:slug/:ano" element={<EditionDetailPage />} />
+            <Route path="/edicoes/:eventoId/:ano" element={<EditionDetailPage />} />
             <Route path="/autores/:slug" element={<AuthorDetailPage />} />
             <Route path="/configuracoes" element={<UserSettingsPage />} />
             <Route path="/admin/edicoes/new" element={<NewEditionPage />} />

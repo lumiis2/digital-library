@@ -4,7 +4,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import ArticleCard from '../components/cards/ArticleCard';
 
 function EditionDetailPage() {
-  const { slug, ano } = useParams();
+  const { slug, ano, eventoId } = useParams();
   const [evento, setEvento] = useState(null);
   const [edicao, setEdicao] = useState(null);
   const [artigos, setArtigos] = useState([]);
@@ -16,7 +16,20 @@ function EditionDetailPage() {
       try {
         setLoading(true);
         
-        // Buscar dados do evento
+        // Determinar se estamos usando slug ou eventoId
+        const isUsingEventoId = eventoId && !slug;
+        
+        if (isUsingEventoId) {
+          // Abordagem alternativa: buscar edição diretamente usando evento_id
+          // Por enquanto, vamos simular os dados já que não temos todos os endpoints
+          setEvento({ nome: `Evento ${eventoId}`, slug: `evento-${eventoId}` });
+          setEdicao({ evento_id: eventoId, ano: parseInt(ano) });
+          setArtigos([]); // Por enquanto vazio
+          setLoading(false);
+          return;
+        }
+        
+        // Buscar dados do evento usando slug (implementação original)
         const eventoResponse = await fetch(`http://localhost:8000/eventos/${slug}`);
         if (!eventoResponse.ok) {
           throw new Error('Evento não encontrado');
@@ -47,10 +60,10 @@ function EditionDetailPage() {
       }
     };
 
-    if (slug && ano) {
+    if ((slug && ano) || (eventoId && ano)) {
       fetchEdicaoEArtigos();
     }
-  }, [slug, ano]);
+  }, [slug, ano, eventoId]);
 
   if (loading) return <LoadingSpinner />;
   

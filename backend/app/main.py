@@ -175,12 +175,28 @@ def criar_edicao(edicao: EditionCreate, db: Session = Depends(get_db)):
 def listar_edicoes(db: Session = Depends(get_db)):
     return db.query(Edition).all()
 
-@app.get("/eventos/{evento_slug}/edicoes", response_model=list[EditionRead])
+@app.get("/eventos/{evento_slug}/edicoes")
 def listar_edicoes_do_evento(evento_slug: str, db: Session = Depends(get_db)):
     evento = db.query(Event).filter(Event.slug == evento_slug).first()
     if not evento:
         raise HTTPException(status_code=404, detail="Evento não encontrado")
-    return db.query(Edition).filter(Edition.evento_id == evento.id).all()
+    
+    edicoes = db.query(Edition).filter(Edition.evento_id == evento.id).all()
+    
+    # Adicionar contagem de artigos para cada edição
+    result = []
+    for edicao in edicoes:
+        artigos_count = db.query(Article).filter(Article.edicao_id == edicao.id).count()
+        edicao_dict = {
+            "id": edicao.id,
+            "evento_id": edicao.evento_id,
+            "ano": edicao.ano,
+            "slug": edicao.slug,
+            "total_artigos": artigos_count
+        }
+        result.append(edicao_dict)
+    
+    return result
 
 @app.get("/eventos/{evento_slug}/{ano}", response_model=EditionRead)
 def obter_edicao_por_slug_e_ano(evento_slug: str, ano: int, db: Session = Depends(get_db)):
