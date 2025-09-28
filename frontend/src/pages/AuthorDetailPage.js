@@ -12,6 +12,8 @@ function AuthorDetailPage() {
   const [totalArtigos, setTotalArtigos] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedYear, setSelectedYear] = useState('all');
 
   useEffect(() => {
     const fetchAutorEArtigos = async () => {
@@ -57,7 +59,31 @@ function AuthorDetailPage() {
   if (error) return <div className="text-center py-12 text-red-600">Erro: {error}</div>;
   if (!autor) return <div className="text-center py-12 text-gray-600">Autor não encontrado.</div>;
 
+  // Aplicar filtros
   const anos = Object.keys(artigosPorAno).sort((a, b) => b - a);
+  const anosFiltrados = selectedYear === 'all' ? anos : [selectedYear];
+  
+  const artigosFiltrados = {};
+  anosFiltrados.forEach(ano => {
+    if (artigosPorAno[ano]) {
+      const artigosDoAno = artigosPorAno[ano].filter(artigo => {
+        if (!artigo || !artigo.titulo) return false;
+        
+        const matchesSearch = searchTerm === '' || 
+          artigo.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (artigo.area && artigo.area.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (artigo.palavras_chave && artigo.palavras_chave.toLowerCase().includes(searchTerm.toLowerCase()));
+        
+        return matchesSearch;
+      });
+      
+      if (artigosDoAno.length > 0) {
+        artigosFiltrados[ano] = artigosDoAno;
+      }
+    }
+  });
+
+  const totalArtigosFiltrados = Object.values(artigosFiltrados).reduce((total, artigos) => total + artigos.length, 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -77,31 +103,98 @@ function AuthorDetailPage() {
           </p>
         </div>
 
-        {anos.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+        {/* Filtros */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Busca por título/área */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Buscar artigos
+              </label>
+              <input
+                type="text"
+                placeholder="Título, área ou palavras-chave..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            {/* Filtro por ano */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Filtrar por ano
+              </label>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all">Todos os anos</option>
+                {anos.map(ano => (
+                  <option key={ano} value={ano}>
+                    {ano} ({artigosPorAno[ano].length} {artigosPorAno[ano].length === 1 ? 'artigo' : 'artigos'})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Estatísticas de filtros */}
+          {(searchTerm || selectedYear !== 'all') && (
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-800">
+                Mostrando {totalArtigosFiltrados} de {totalArtigos} artigos
+                {searchTerm && ` para "${searchTerm}"`}
+                {selectedYear !== 'all' && ` em ${selectedYear}`}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {Object.keys(artigosFiltrados).length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
             <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum artigo encontrado</h3>
-            <p className="text-gray-600">Este autor ainda não possui artigos publicados.</p>
+            <p className="text-gray-600">
+              {searchTerm || selectedYear !== 'all' 
+                ? 'Tente ajustar os filtros para encontrar artigos.'
+                : 'Este autor ainda não possui artigos publicados.'
+              }
+            </p>
+            {(searchTerm || selectedYear !== 'all') && (
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedYear('all');
+                }}
+                className="mt-4 text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Limpar filtros
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-8">
-            {anos.map((ano) => (
-              <div key={ano} className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="bg-gray-50 px-6 py-4 border-b">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    {ano} ({artigosPorAno[ano].length} {artigosPorAno[ano].length === 1 ? 'artigo' : 'artigos'})
-                  </h2>
-                </div>
-                <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {artigosPorAno[ano]
-                      .filter(artigo => artigo && artigo.id && artigo.titulo) // Filtrar artigos válidos
-                      .map((artigo) => (
-                        <ArticleCard key={artigo.id} artigo={artigo} />
-                      ))}
+            {Object.entries(artigosFiltrados)
+              .sort(([anoA], [anoB]) => parseInt(anoB) - parseInt(anoA))
+              .map(([ano, artigos]) => (
+                <div key={ano} className="bg-white rounded-lg shadow-sm border border-gray-200">
+                  <div className="bg-gray-50 px-6 py-4 border-b">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      {ano} ({artigos.length} {artigos.length === 1 ? 'artigo' : 'artigos'})
+                    </h2>
+                  </div>
+                  <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {artigos
+                        .filter(artigo => artigo && artigo.id && artigo.titulo)
+                        .map((artigo) => (
+                          <ArticleCard key={artigo.id} artigo={artigo} />
+                        ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         )}
       </div>
