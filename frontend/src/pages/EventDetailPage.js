@@ -4,11 +4,14 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import EditionCard from '../components/cards/EditionCard';
 
 function EventDetailPage() {
-  const { slug } = useParams();
+  const { slug, eventSlug } = useParams(); // Suporte para ambos os parâmetros
   const [evento, setEvento] = useState(null);
   const [edicoes, setEdicoes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Usar eventSlug se disponível (rota amigável), senão usar slug (rota original)
+  const currentSlug = eventSlug || slug;
 
   useEffect(() => {
     const fetchEventoEEdicoes = async () => {
@@ -16,7 +19,7 @@ function EventDetailPage() {
         setLoading(true);
         
         // Buscar dados do evento
-        const eventoResponse = await fetch(`http://localhost:8000/eventos/${slug}`);
+        const eventoResponse = await fetch(`http://localhost:8000/eventos/${currentSlug}`);
         if (!eventoResponse.ok) {
           throw new Error('Evento não encontrado');
         }
@@ -24,7 +27,7 @@ function EventDetailPage() {
         setEvento(eventoData);
 
         // Buscar edições do evento
-        const edicoesResponse = await fetch(`http://localhost:8000/eventos/${slug}/edicoes`);
+        const edicoesResponse = await fetch(`http://localhost:8000/eventos/${currentSlug}/edicoes`);
         if (!edicoesResponse.ok) {
           throw new Error('Erro ao carregar edições');
         }
@@ -38,10 +41,10 @@ function EventDetailPage() {
       }
     };
 
-    if (slug) {
+    if (currentSlug) {
       fetchEventoEEdicoes();
     }
-  }, [slug]);
+  }, [currentSlug]);
 
   if (loading) return <LoadingSpinner />;
   
@@ -103,13 +106,13 @@ function EventDetailPage() {
                 .map((edicao) => (
                   <Link 
                     key={edicao.id} 
-                    to={`/eventos/${slug}/${edicao.ano}`}
+                    to={`/${currentSlug}/${edicao.ano}`}
                     className="block hover:transform hover:scale-105 transition-transform"
                   >
                     <EditionCard 
                       edition={edicao} 
                       eventName={evento.nome}
-                      eventSlug={slug}
+                      eventSlug={currentSlug}
                     />
                   </Link>
                 ))}

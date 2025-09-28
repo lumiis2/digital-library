@@ -4,12 +4,16 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import ArticleCard from '../components/cards/ArticleCard';
 
 function EditionDetailPage() {
-  const { slug, ano, eventoId } = useParams();
+  const { slug, ano, eventoId, eventSlug, year } = useParams();
   const [evento, setEvento] = useState(null);
   const [edicao, setEdicao] = useState(null);
   const [artigos, setArtigos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Determinar qual formato de parâmetros estamos usando
+  const currentSlug = eventSlug || slug; // Rota amigável ou original
+  const currentYear = year || ano; // Rota amigável ou original
 
   useEffect(() => {
     const fetchEdicaoEArtigos = async () => {
@@ -17,20 +21,21 @@ function EditionDetailPage() {
         setLoading(true);
         
         // Determinar se estamos usando slug ou eventoId
-        const isUsingEventoId = eventoId && !slug;
+        const isUsingEventoId = eventoId && !currentSlug;
+        const isUsingFriendlyUrl = eventSlug && year;
         
         if (isUsingEventoId) {
           // Abordagem alternativa: buscar edição diretamente usando evento_id
           // Por enquanto, vamos simular os dados já que não temos todos os endpoints
           setEvento({ nome: `Evento ${eventoId}`, slug: `evento-${eventoId}` });
-          setEdicao({ evento_id: eventoId, ano: parseInt(ano) });
+          setEdicao({ evento_id: eventoId, ano: parseInt(currentYear) });
           setArtigos([]); // Por enquanto vazio
           setLoading(false);
           return;
         }
         
-        // Buscar dados do evento usando slug (implementação original)
-        const eventoResponse = await fetch(`http://localhost:8000/eventos/${slug}`);
+        // Buscar dados do evento usando slug (implementação original + friendly URLs)
+        const eventoResponse = await fetch(`http://localhost:8000/eventos/${currentSlug}`);
         if (!eventoResponse.ok) {
           throw new Error('Evento não encontrado');
         }
@@ -38,7 +43,7 @@ function EditionDetailPage() {
         setEvento(eventoData);
 
         // Buscar dados da edição
-        const edicaoResponse = await fetch(`http://localhost:8000/eventos/${slug}/${ano}`);
+        const edicaoResponse = await fetch(`http://localhost:8000/eventos/${currentSlug}/${currentYear}`);
         if (!edicaoResponse.ok) {
           throw new Error('Edição não encontrada');
         }
@@ -46,7 +51,7 @@ function EditionDetailPage() {
         setEdicao(edicaoData);
 
         // Buscar artigos da edição
-        const artigosResponse = await fetch(`http://localhost:8000/eventos/${slug}/${ano}/artigos`);
+        const artigosResponse = await fetch(`http://localhost:8000/eventos/${currentSlug}/${currentYear}/artigos`);
         if (!artigosResponse.ok) {
           throw new Error('Erro ao carregar artigos');
         }
@@ -60,10 +65,10 @@ function EditionDetailPage() {
       }
     };
 
-    if ((slug && ano) || (eventoId && ano)) {
+    if ((currentSlug && currentYear) || (eventoId && currentYear)) {
       fetchEdicaoEArtigos();
     }
-  }, [slug, ano, eventoId]);
+  }, [currentSlug, currentYear, eventoId]);
 
   if (loading) return <LoadingSpinner />;
   
@@ -93,9 +98,9 @@ function EditionDetailPage() {
             <li><span className="mx-2">/</span></li>
             <li><Link to="/eventos" className="hover:text-gray-700">Eventos</Link></li>
             <li><span className="mx-2">/</span></li>
-            <li><Link to={`/eventos/${slug}`} className="hover:text-gray-700">{evento.nome}</Link></li>
+            <li><Link to={`/${currentSlug || evento.slug}`} className="hover:text-gray-700">{evento.nome}</Link></li>
             <li><span className="mx-2">/</span></li>
-            <li className="text-gray-900 font-medium">{ano}</li>
+            <li className="text-gray-900 font-medium">{currentYear}</li>
           </ol>
         </nav>
 
@@ -104,10 +109,10 @@ function EditionDetailPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                {evento.nome} {ano}
+                {evento.nome} {currentYear}
               </h1>
               <p className="text-lg text-gray-600 mt-2">
-                Edição de {ano} • {artigos.length} artigos publicados
+                Edição de {currentYear} • {artigos.length} artigos publicados
               </p>
             </div>
             <div className="text-right">
@@ -115,12 +120,12 @@ function EditionDetailPage() {
                 {evento.slug.toUpperCase()}
               </span>
               <span className="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
-                {ano}
+                {currentYear}
               </span>
             </div>
           </div>
           <p className="text-gray-600">
-            Explore todos os artigos publicados na edição de {ano} do {evento.nome}.
+            Explore todos os artigos publicados na edição de {currentYear} do {evento.nome}.
           </p>
         </div>
 

@@ -7,7 +7,7 @@ const EventCard = ({ event }) => {
 
   const handleClick = () => {
     if (event.slug) {
-      navigate(`/eventos/${event.slug}`);
+      navigate(`/${event.slug}`); // Usar URL amigável
     }
   };
 

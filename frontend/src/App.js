@@ -92,13 +92,19 @@ function App() {
             <Route path="/admin/events" element={<NewEventPage />} />
             <Route path="/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/events/:id/edit" element={<EditEventPage/>} />
+            <Route path="/configuracoes" element={<UserSettingsPage />} />
+            <Route path="/admin/edicoes/new" element={<NewEditionPage />} />
+            <Route path="/admin/edicoes/:id/edit" element={<NewEditionPage />} />
+            
+            {/* Rotas originais (mantidas para compatibilidade) */}
             <Route path="/eventos/:slug" element={<EventDetailPage />} />
             <Route path="/eventos/:slug/:ano" element={<EditionDetailPage />} />
             <Route path="/edicoes/:eventoId/:ano" element={<EditionDetailPage />} />
             <Route path="/autores/:slug" element={<AuthorDetailPage />} />
-            <Route path="/configuracoes" element={<UserSettingsPage />} />
-            <Route path="/admin/edicoes/new" element={<NewEditionPage />} />
-            <Route path="/admin/edicoes/:id/edit" element={<NewEditionPage />} />
+            
+            {/* Rotas amigáveis para eventos e edições (user story 6) - devem vir por último */}
+            <Route path="/:eventSlug/:year" element={<EditionDetailPage />} />
+            <Route path="/:eventSlug" element={<EventDetailPage />} />
           </Routes>
         </div>
       </div>
