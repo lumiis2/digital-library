@@ -106,14 +106,13 @@ def read_root():
 @app.post("/eventos", response_model=EventoRead)
 def criar_evento(evento: EventoCreate, db: Session = Depends(get_db)):
     evento_existente = db.query(Event).filter(
-        Event.slug == evento.sigla,
-        Event.admin_id == evento.admin_id).first()
+        Event.slug == evento.sigla).first()
     if evento_existente:
         raise HTTPException(
             status_code = 400,
             detail="Já existe um evento com essa sigla registrado no banco de dados"
         )
-    novo_evento = Event(nome=evento.nome, slug=evento.sigla, admin_id=evento.admin_id)
+    novo_evento = Event(nome=evento.nome, slug=evento.sigla)
     db.add(novo_evento)
     db.commit()
     db.refresh(novo_evento)

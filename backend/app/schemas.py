@@ -7,13 +7,11 @@ from datetime import date
 class EventoCreate(BaseModel):
     nome: str
     sigla: str
-    admin_id: int | None #None ´eprovisório, pq os dados que já estão no bd estão sem admin_id
 
 class EventoRead(BaseModel):
     id: int
     nome: str
     slug: str
-    admin_id: int
 
     model_config = {
         "from_attributes": True  # <- substitui orm_mode
