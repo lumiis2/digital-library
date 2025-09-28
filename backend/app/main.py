@@ -6,7 +6,6 @@ from .schemas import EventoCreate, EventoRead, EditionCreate, EditionRead, Autho
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import IntegrityError
 import hashlib
-import jwt  # pip install pyjwt
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -309,24 +308,24 @@ async def criar_artigo(artigo: ArticleCreate, db: Session = Depends(get_db)):
         evento_nome = edicao.event.nome if edicao and edicao.event else "Evento não identificado"
         
         # Enviar notificações por email para os autores
-        for autor in autores:
-            # Buscar o usuário correspondente ao autor (se existir)
-            usuario = db.query(User).filter(
-                User.nome.ilike(f"%{autor.nome}%"),
-                User.notificar_novos_artigos == 1
-            ).first()
-            
-            if usuario:
-                # Enviar email de notificação de forma assíncrona
-                try:
-                    await send_notification_email(
-                        str(usuario.email),
-                        f"{autor.nome} {autor.sobrenome}",
-                        artigo.titulo,
-                        evento_nome
-                    )
-                except Exception as e:
-                    print(f"Erro ao enviar notificação para {usuario.email}: {str(e)}")
+        # for autor in autores:
+        #     # Buscar o usuário correspondente ao autor (se existir)
+        #     usuario = db.query(User).filter(
+        #         User.nome.ilike(f"%{autor.nome}%"),
+        #         User.notificar_novos_artigos == 1
+        #     ).first()
+        #     
+        #     if usuario:
+        #         # Enviar email de notificação de forma assíncrona
+        #         try:
+        #             await send_notification_email(
+        #                 str(usuario.email),
+        #                 f"{autor.nome} {autor.sobrenome}",
+        #                 artigo.titulo,
+        #                 evento_nome
+        #             )
+        #         except Exception as e:
+        #             print(f"Erro ao enviar notificação para {usuario.email}: {str(e)}")
 
     return novo_artigo
 
@@ -352,40 +351,57 @@ ADMIN_EMAILS = {"luisalcarvalhaes@gmail.com", "outroadmin@email.com"}  # coloque
 
 @app.post("/api/auth/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
-    perfil = "admin" if user.email in ADMIN_EMAILS else "usuario"
-    hashed = sha256(user.senha_hash)
-    new_user = User(nome=user.nome, email=user.email, senha_hash=hashed, perfil=perfil)
-    db.add(new_user)
     try:
+        # Verificar se o email já existe
+        existing_user = db.query(User).filter(User.email == str(user.email)).first()
+        if existing_user:
+            raise HTTPException(status_code=409, detail="E-mail já cadastrado")
+        
+        hashed = sha256(user.senha_hash)
+        new_user = User(nome=user.nome, email=str(user.email), senha_hash=hashed)
+        
+        db.add(new_user)
         db.commit()
-    except:
+        db.refresh(new_user)
+        
+        return {"message": "Usuário registrado com sucesso", "user": {
+            "id": new_user.id,
+            "nome": new_user.nome,
+            "email": str(new_user.email)
+        }}
+    except HTTPException:
+        raise
+    except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=409, detail="E-mail já cadastrado")
-    db.refresh(new_user)
-    return {"message": "Usuário registrado com sucesso", "user": UserRead.from_orm(new_user)}
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 
 @app.post("/api/auth/login")
 def login(data: LoginRequest, db: Session = Depends(get_db)):
     email = data.email
     password = data.password
-    perfil = data.perfil  # <-- receba o perfil do frontend
 
     user = db.query(User).filter(User.email == email).first()
-    if not user or str(user.senha_hash) != sha256(password):
+    if not user:
+        raise HTTPException(status_code=401, detail="Credenciais inválidas")
+    
+    if str(user.senha_hash) != sha256(password):
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
 
-    # Se o usuário tentar logar como admin, mas não for admin
-    if perfil == "admin" and str(user.perfil) != "admin":
-        raise HTTPException(status_code=403, detail="Você não tem permissão de admin")
+    # Gera um token simples (substituindo JWT temporariamente)
+    try:
+        token = f"user_{user.id}_{sha256(str(user.id) + SECRET_KEY)}"
+        return {"token": token, "user": {
+            "id": user.id,
+            "nome": user.nome,
+            "email": str(user.email)
+        }}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao gerar token: {str(e)}")
 
-    # Gera um token simples (para produção, use JWT com expiração)
-    token = jwt.encode({"user_id": user.id, "email": user.email}, SECRET_KEY, algorithm="HS256")
-    return {"token": token, "user": UserRead.from_orm(user)}
-
-@app.get("/usuarios", response_model=list[UserRead])
-def listar_usuarios(db: Session = Depends(get_db)):
-    return db.query(User).all()
+# @app.get("/usuarios", response_model=list[UserRead])
+# def listar_usuarios(db: Session = Depends(get_db)):
+#     return db.query(User).all()
 
 @app.put("/usuarios/{user_id}/notificacoes")
 @app.put("/usuarios/{user_id}/notificacoes")
@@ -395,10 +411,10 @@ def atualizar_preferencias_notificacao(user_id: int, receber_notificacoes: bool,
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     
     # Atualizar a preferência de notificação do usuário
-    db.query(User).filter(User.id == user_id).update({
-        User.notificar_novos_artigos: 1 if receber_notificacoes else 0
-    })
-    db.commit()
+    # db.query(User).filter(User.id == user_id).update({
+    #     User.notificar_novos_artigos: 1 if receber_notificacoes else 0
+    # })
+    # db.commit()
     
     return {
         "message": "Preferências de notificação atualizadas com sucesso",
@@ -413,5 +429,5 @@ def obter_preferencias_notificacao(user_id: int, db: Session = Depends(get_db)):
     
     return {
         "user_id": user_id,
-        "receber_notificacoes": bool(user.notificar_novos_artigos)
+        "receber_notificacoes": False  # bool(user.notificar_novos_artigos)
     }

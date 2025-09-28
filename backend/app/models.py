@@ -69,9 +69,3 @@ class User(Base):
     nome = Column(String(100), nullable=False)
     email = Column(String(255), unique=True, nullable=False, index=True)
     senha_hash = Column(String(255), nullable=False)
-    perfil = Column(String(20), default="usuario")  # "usuario" ou "admin"
-    notificar_novos_artigos = Column(
-        Integer, default=1
-    )  # 1 = receber emails sobre novos artigos, 0 = não receber
-
-    # Futuramente, adicione outros campos de preferências conforme necessário
