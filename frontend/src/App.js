@@ -102,7 +102,9 @@ function App() {
             <Route path="/edicoes/:eventoId/:ano" element={<EditionDetailPage />} />
             <Route path="/autores/:slug" element={<AuthorDetailPage />} />
             
-            {/* Rotas amigáveis para eventos e edições (user story 6) - devem vir por último */}
+            {/* Rotas amigáveis para eventos, edições e autores - devem vir por último */}
+            <Route path="/author/:authorId" element={<AuthorDetailPage />} />
+            <Route path="/:authorSlug" element={<AuthorDetailPage />} />
             <Route path="/:eventSlug/:year" element={<EditionDetailPage />} />
             <Route path="/:eventSlug" element={<EventDetailPage />} />
           </Routes>

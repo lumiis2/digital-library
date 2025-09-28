@@ -15,7 +15,7 @@ const AuthorsPage = ({ data: authors, loading, error }) => {
     author.sobrenome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     author.instituicao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     author.area_expertise?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) :[];
+  ) : authors; // Mostrar todos os autores quando não há busca
 
   return (
     <div className="min-h-screen bg-gray-50">

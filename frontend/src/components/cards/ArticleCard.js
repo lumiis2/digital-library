@@ -1,12 +1,18 @@
 import React from 'react';
 import { DownloadIcon } from '../common/Icons';
 
-const ArticleCard = ({ artigo }) => (
-  <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 overflow-hidden group">
-    <div className="p-6">
-      <h3 className="text-xl font-semibold text-gray-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
-        {artigo.titulo}
-      </h3>
+const ArticleCard = ({ artigo }) => {
+  // Validação defensiva
+  if (!artigo || !artigo.titulo) {
+    return <div className="bg-gray-100 rounded-xl p-6 text-center text-gray-500">Artigo inválido</div>;
+  }
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 overflow-hidden group">
+      <div className="p-6">
+        <h3 className="text-xl font-semibold text-gray-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
+          {artigo.titulo}
+        </h3>
       
       <div className="space-y-2 mb-4">
         <div className="flex items-center text-sm">
@@ -46,6 +52,7 @@ const ArticleCard = ({ artigo }) => (
       )}
     </div>
   </div>
-);
+  );
+};
 
 export default ArticleCard;

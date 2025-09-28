@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
 from datetime import date
+from typing import Optional
 
 # ----------------------
 # Evento
@@ -44,6 +45,7 @@ class AuthorRead(BaseModel):
     id: int
     nome: str
     sobrenome: str
+    slug: Optional[str] = None
 
     model_config = {
         "from_attributes": True  # <- substitui orm_mode
@@ -54,9 +56,9 @@ class AuthorRead(BaseModel):
 # ----------------------
 class ArticleCreate(BaseModel):
     titulo: str
-    pdf_path: str = None
-    area: str = None
-    palavras_chave: str = None
+    pdf_path: Optional[str] = None
+    area: Optional[str] = None
+    palavras_chave: Optional[str] = None
     edicao_id: int
     author_ids: list[int] = []
 

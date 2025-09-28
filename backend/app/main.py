@@ -221,7 +221,7 @@ def listar_artigos_da_edicao(evento_slug: str, ano: int, db: Session = Depends(g
 # ----------------------
 @app.post("/autores", response_model=AuthorRead)
 def criar_autor(autor: AuthorCreate, db: Session = Depends(get_db)):
-    autor_existente = db.query(Author).filter(Author.nome == autor.nome and Author.sobrenome == autor.sobrenome)
+    autor_existente = db.query(Author).filter((Author.nome == autor.nome) & (Author.sobrenome == autor.sobrenome)).first()
     if autor_existente:
         raise HTTPException(
             status_code=400,
