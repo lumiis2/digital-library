@@ -74,7 +74,7 @@ class ArticleRead(BaseModel):
     pdf_path: str | None
     area: str | None
     palavras_chave: str | None
-    edicao_id: int
+    edicao_id: int | None
     authors: list[AuthorRead] = []
 
     model_config = {

@@ -1,4 +1,5 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from .database import Base, engine, SessionLocal
 from .models import Event, Edition, Article, Author, artigo_autor, User, Notification, EmailLog
@@ -8,6 +9,8 @@ from sqlalchemy.exc import IntegrityError
 import hashlib
 import smtplib
 from email.mime.text import MIMEText
+import os
+import shutil
 from email.mime.multipart import MIMEMultipart
 import asyncio
 from typing import List
@@ -63,15 +66,16 @@ async def send_notification_email(to_email: str, author_name: str, article_title
         print(f"Erro ao enviar email: {str(e)}")
         return False
 
-app = FastAPI(title="Digital Library API")
+app = FastAPI()
+
+# Criar diretório uploads se não existir e servir arquivos estáticos (PDFs)
+uploads_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")
+os.makedirs(uploads_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:3001", 
-        ],  # Or restrict to ["http://localhost:3000"]
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -361,12 +365,60 @@ async def criar_artigo(artigo: ArticleCreate, db: Session = Depends(get_db)):
 #@app.get("/artigos", response_model=list[ArticleRead])
 #def listar_artigos(db: Session = Depends(get_db)):
 #    return db.query(Article).all()
+
+# Upload de PDF
+@app.post("/upload-pdf")
+async def upload_pdf(file: UploadFile = File(...)):
+    if not file.filename or not file.filename.endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Apenas arquivos PDF são permitidos")
+    
+    # Criar diretório uploads se não existir
+    upload_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    # Salvar arquivo
+    file_path = os.path.join(upload_dir, file.filename)
+    
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        # Retornar URL completa do arquivo para acesso via web
+        file_url = f"/uploads/{file.filename}"
+        return {"message": "Upload realizado com sucesso", "file_path": file_url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao salvar arquivo: {str(e)}")
+
 @app.get("/artigos", response_model=list[ArticleRead])
 def listar_artigos(autor_id: int | None = None, db: Session = Depends(get_db)):
     query = db.query(Article)
     if autor_id:
         query = query.join(Article.authors).filter(Author.id == autor_id)
-    return query.all()
+    artigos = query.all()
+    
+    # Criar resposta manual para evitar problemas de serialização
+    result = []
+    for artigo in artigos:
+        authors_list = []
+        for author in artigo.authors:
+            authors_list.append({
+                "id": author.id,
+                "nome": author.nome,
+                "sobrenome": author.sobrenome,
+                "slug": author.slug
+            })
+        
+        result.append({
+            "id": artigo.id,
+            "titulo": artigo.titulo,
+            "pdf_path": artigo.pdf_path,
+            "area": artigo.area,
+            "palavras_chave": artigo.palavras_chave,
+            "edicao_id": artigo.edicao_id,
+            "authors": authors_list
+        })
+    
+    return result
 
 @app.delete("/artigos/{artigo_id}")
 def deletar_artigo(artigo_id: int, db: Session = Depends(get_db)):

@@ -7,6 +7,9 @@ const ArticlesPage = ({ artigos = [], loading, error }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedArea, setSelectedArea] = useState("all");
 
+  console.log("ArticlesPage - Props:", { artigos, loading, error });
+  console.log("ArticlesPage - Artigos length:", artigos?.length);
+
   if (loading) return <LoadingSpinner message="Carregando artigos..." />;
   if (error) return <div className="text-center py-12 text-red-600">Erro: {error}</div>;
 

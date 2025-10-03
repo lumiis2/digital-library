@@ -8,3 +8,4 @@ pydantic[email]
 pyjwt
 fastapi-mail
 aiosmtplib
+python-multipart

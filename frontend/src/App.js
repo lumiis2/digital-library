@@ -48,11 +48,40 @@ function App() {
       .catch(() => setLoadingEdicoes(false));
   }, []);
 
-  useEffect(() => {
+  const reloadArtigos = useCallback(() => {
+    console.log("Recarregando artigos...");
     fetch("http://localhost:8000/artigos")
-      .then(res => res.json())
-      .then(data => { setArtigos(data); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then(res => {
+        console.log("Resposta reload artigos:", res.status);
+        return res.json();
+      })
+      .then(data => { 
+        console.log("Artigos recarregados:", data);
+        setArtigos(data); 
+        setLoading(false); 
+      })
+      .catch(error => {
+        console.error("Erro ao recarregar artigos:", error);
+        setLoading(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    console.log("Carregando artigos...");
+    fetch("http://localhost:8000/artigos")
+      .then(res => {
+        console.log("Resposta do backend:", res.status);
+        return res.json();
+      })
+      .then(data => { 
+        console.log("Artigos carregados:", data);
+        setArtigos(data); 
+        setLoading(false); 
+      })
+      .catch(error => {
+        console.error("Erro ao carregar artigos:", error);
+        setLoading(false);
+      });
   }, []);
 
   useEffect(() => {
@@ -97,11 +126,18 @@ function App() {
             <Route path="/editions" element={<EditionsPage data={edicoes} loading={loadingEdicoes} onReload={reloadEdicoes} />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
-            <Route path="/my-articles" element={<AdminArticlesPage />} />
+            <Route path="/my-articles" element={<AdminArticlesPage artigos={artigos} onReload={reloadArtigos} />} />
             <Route path="/admin" element={<AdminPanel />} />
-            <Route path="/admin/articles" element={<NewArticlePage />} />
+            <Route path="/admin/articles" element={<NewArticlePage onReload={reloadArtigos} />} />
             <Route path="/admin/events" element={<NewEventPage />} />
-            <Route path="/dashboard" element={<AdminDashboard />} />
+            <Route path="/dashboard" element={<AdminDashboard 
+                  eventos={eventos} 
+                  edicoes={edicoes} 
+                  artigos={artigos}
+                  onReloadEventos={reloadEventos}
+                  onReloadEdicoes={reloadEdicoes}
+                  onReloadArtigos={reloadArtigos}
+                />} />
             <Route path="/admin/events/:id/edit" element={<EditEventPage/>} />
             <Route path="/configuracoes" element={<UserSettingsPage />} />
             <Route path="/admin/edicoes/new" element={<NewEditionPage />} />

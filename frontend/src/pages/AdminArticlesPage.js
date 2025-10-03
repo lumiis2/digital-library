@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useAuth } from "../components/common/AuthContext";
 import { useNavigate } from "react-router-dom";
 
-const AdminArticlesPage = () => {
+const AdminArticlesPage = ({ artigos = [], onReload }) => {
   const { user, isAdmin } = useAuth();
-  const [articles, setArticles] = useState([]);
   const navigate = useNavigate();
+
+  // Filtrar artigos do usuário atual
+  const userArticles = artigos.filter(artigo => 
+    artigo.authors && artigo.authors.some(author => author.id === user?.id)
+  );
 
   useEffect(() => {
     if (!isAdmin()) {
@@ -13,11 +17,11 @@ const AdminArticlesPage = () => {
       return;
     }
 
-    fetch(`http://localhost:8000/artigos?autor_id=${user.id}`)
-      .then(res => res.json())
-      .then(data => setArticles(data))
-      .catch(err => console.error(err));
-  }, [user, isAdmin, navigate]);
+    // Recarregar artigos se necessário
+    if (onReload) {
+      onReload();
+    }
+  }, [user, isAdmin, navigate, onReload]);
 
   return (
     <div className="p-6">
@@ -33,7 +37,7 @@ const AdminArticlesPage = () => {
       </button>
 
       <ul className="space-y-3">
-        {articles.map(article => (
+        {userArticles.map(article => (
           <li
             key={article.id}
             className="p-4 bg-papel border border-madeira rounded shadow"
