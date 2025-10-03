@@ -41,9 +41,6 @@ const AdminPanel = () => {
               <Link to="/admin/events" className="block w-full bg-blue-600 text-white text-center py-2 px-4 rounded hover:bg-blue-700">
                 Novo Evento
               </Link>
-              <Link to="/eventos" className="block w-full bg-gray-200 text-gray-700 text-center py-2 px-4 rounded hover:bg-gray-300">
-                Ver Todos os Eventos
-              </Link>
             </div>
           </div>
 
@@ -65,9 +62,6 @@ const AdminPanel = () => {
               <Link to="/admin/import-bibtex" className="block w-full bg-orange-600 text-white text-center py-2 px-4 rounded hover:bg-orange-700">
                 Importar BibTeX
               </Link>
-              <Link to="/my-articles" className="block w-full bg-gray-200 text-gray-700 text-center py-2 px-4 rounded hover:bg-gray-300">
-                Meus Artigos
-              </Link>
             </div>
           </div>
 
@@ -85,9 +79,6 @@ const AdminPanel = () => {
             <div className="space-y-2">
               <Link to="/admin/edicoes/new" className="block w-full bg-purple-600 text-white text-center py-2 px-4 rounded hover:bg-purple-700">
                 Nova Edição
-              </Link>
-              <Link to="/edicoes" className="block w-full bg-gray-200 text-gray-700 text-center py-2 px-4 rounded hover:bg-gray-300">
-                Ver Todas as Edições
               </Link>
             </div>
           </div>
