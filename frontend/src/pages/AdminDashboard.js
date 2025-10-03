@@ -2,11 +2,15 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../components/common/AuthContext";
 import { useNavigate } from "react-router-dom";
 
-const AdminArticlesPage = () => {
-  const { user, isAdmin } = useAuth();
-  const [articles, setArticles] = useState([]);
-  const [events, setEvents] = useState([]);
-  const [editions, setEditions] = useState([]);
+const AdminDashboard = ({ 
+  artigos, 
+  eventos, 
+  edicoes, 
+  onReloadArtigos, 
+  onReloadEventos, 
+  onReloadEdicoes 
+}) => {
+  const { isAdmin } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -14,31 +18,7 @@ const AdminArticlesPage = () => {
       navigate("/"); // 🚨 redireciona se não for admin
       return;
     }
-
-    // Buscar artigos do admin
-    fetch(`http://localhost:8000/artigos?autor_id=${user.id}`)
-      .then((res) => res.json())
-      .then((data) => setArticles(data))
-      .catch((err) => console.error(err));
-
-    // Buscar eventos do admin
-    fetch("http://localhost:8000/eventos")
-      .then((res) => res.json())
-      .then((data) => {
-        setEvents(
-          user?.perfil === "admin"
-            ? data.filter((ev) => ev.admin_id === user.id)
-            : data
-        );
-      })
-      .catch((err) => console.error(err));
-
-    // Buscar edições
-    fetch("http://localhost:8000/edicoes")
-      .then((res) => res.json())
-      .then((data) => setEditions(data))
-      .catch((err) => console.error(err));
-  }, [user, isAdmin, navigate]);
+  }, [isAdmin, navigate]);
 
   // Função para excluir artigo
   const handleDeleteArticle = async (id) => {
@@ -56,8 +36,8 @@ const AdminArticlesPage = () => {
         throw new Error("Erro ao excluir artigo");
       }
 
-      // Remove o artigo do estado
-      setArticles((prev) => prev.filter((a) => a.id !== id));
+      // Recarrega a lista de artigos
+      onReloadArtigos();
       alert("Artigo excluído com sucesso!");
     } catch (err) {
       alert(err.message);
@@ -80,8 +60,8 @@ const AdminArticlesPage = () => {
         throw new Error("Erro ao excluir evento");
       }
 
-      // Remove o evento do estado
-      setEvents((prev) => prev.filter((e) => e.id !== id));
+      // Recarrega a lista de eventos
+      onReloadEventos();
       alert("Evento excluído com sucesso!");
     } catch (err) {
       alert(err.message);
@@ -104,8 +84,8 @@ const AdminArticlesPage = () => {
         throw new Error("Erro ao excluir edição");
       }
 
-      // Remove a edição do estado
-      setEditions((prev) => prev.filter((e) => e.id !== id));
+      // Recarrega a lista de edições
+      onReloadEdicoes();
       alert("Edição excluída com sucesso!");
     } catch (err) {
       alert(err.message);
@@ -129,13 +109,13 @@ const AdminArticlesPage = () => {
             </button>
           </div>
 
-          {articles.length === 0 ? (
+          {artigos.length === 0 ? (
             <div className="bg-white p-8 rounded-lg shadow text-center border border-gray-200">
               <p className="text-gray-600">Nenhum artigo cadastrado ainda.</p>
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2">
-              {articles.map((article) => (
+              {artigos.map((article) => (
                 <div
                   key={article.id}
                   className="bg-white p-6 rounded-lg shadow border border-gray-200 hover:shadow-lg transition"
@@ -177,13 +157,13 @@ const AdminArticlesPage = () => {
             </button>
           </div>
 
-          {events.length === 0 ? (
+          {eventos.length === 0 ? (
             <div className="bg-white p-8 rounded-lg shadow text-center border border-gray-200">
               <p className="text-gray-600">Nenhum evento cadastrado ainda.</p>
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2">
-              {events.map((event) => (
+              {eventos.map((event) => (
                 <div
                   key={event.id}
                   className="bg-white p-6 rounded-lg shadow border border-gray-200 hover:shadow-lg transition"
@@ -232,13 +212,13 @@ const AdminArticlesPage = () => {
             </button>
           </div>
 
-          {editions.length === 0 ? (
+          {edicoes.length === 0 ? (
             <div className="bg-white p-8 rounded-lg shadow text-center border border-gray-200">
               <p className="text-gray-600">Nenhuma edição cadastrada ainda.</p>
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2">
-              {editions.map((edition) => (
+              {edicoes.map((edition) => (
                 <div
                   key={edition.id}
                   className="bg-white p-6 rounded-lg shadow border border-gray-200 hover:shadow-lg transition"
@@ -248,7 +228,7 @@ const AdminArticlesPage = () => {
                   </h3>
                   <p className="text-sm text-gray-700 mb-2">
                     <span className="font-semibold">Evento:</span> {
-                      events.find(e => e.id === edition.evento_id)?.nome || `ID ${edition.evento_id}`
+                      eventos.find(e => e.id === edition.evento_id)?.nome || `ID ${edition.evento_id}`
                     }
                   </p>
 
@@ -279,4 +259,4 @@ const AdminArticlesPage = () => {
   );
 };
 
-export default AdminArticlesPage;
+export default AdminDashboard;
