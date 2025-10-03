@@ -14,7 +14,7 @@ const EditEventPage = () => {
 
   // Buscar dados do evento ao carregar
   useEffect(() => {
-    fetch(`http://localhost:8000/eventos/${id}`)
+    fetch(`http://localhost:8000/eventos/id/${id}`)
       .then((res) => {
         if (!res.ok) throw new Error("Erro ao buscar evento");
         return res.json();
@@ -23,7 +23,7 @@ const EditEventPage = () => {
         setForm({
           nome: data.nome,
           slug: data.slug,
-          admin_id: data.admin_id
+          admin_id: data.admin_id || ""
         });
         setLoading(false);
       })
@@ -41,10 +41,15 @@ const EditEventPage = () => {
     e.preventDefault();
 
     try {
+      const updateData = {
+        nome: form.nome,
+        admin_id: form.admin_id ? parseInt(form.admin_id) : null
+      };
+      
       const res = await fetch(`http://localhost:8000/eventos/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(updateData),
       });
 
       if (!res.ok) throw new Error("Erro ao atualizar evento");

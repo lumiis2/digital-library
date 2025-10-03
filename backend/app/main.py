@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from .database import Base, engine, SessionLocal
 from .models import Event, Edition, Article, Author, artigo_autor, User, Notification, EmailLog
-from .schemas import EventoCreate, EventoRead, EditionCreate, EditionRead, AuthorCreate, AuthorRead, ArticleCreate, ArticleRead, UserCreate, UserRead, LoginRequest, NotificationCreate, NotificationRead, NotificationSettings
+from .schemas import EventoCreate, EventoRead, EventoUpdate, EditionCreate, EditionRead, AuthorCreate, AuthorRead, ArticleCreate, ArticleRead, UserCreate, UserRead, LoginRequest, NotificationCreate, NotificationRead, NotificationSettings
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import IntegrityError
 import hashlib
@@ -118,6 +118,45 @@ def criar_evento(evento: EventoCreate, db: Session = Depends(get_db)):
     db.refresh(novo_evento)
     return novo_evento
 
+@app.get("/eventos", response_model=list[EventoRead])
+def listar_eventos(db: Session = Depends(get_db)):
+    return db.query(Event).all()
+
+@app.get("/eventos/{slug}", response_model=EventoRead)
+def obter_evento_por_slug(slug: str, db: Session = Depends(get_db)):
+    evento = db.query(Event).filter(Event.slug == slug).first()
+    if not evento:
+        raise HTTPException(status_code=404, detail="Evento não encontrado")
+    return evento
+
+# Editar evento por ID
+@app.put("/eventos/{evento_id}", response_model=EventoRead)
+def atualizar_evento(evento_id: int, evento: EventoUpdate, db: Session = Depends(get_db)):
+    evento_db = db.query(Event).filter(Event.id == evento_id).first()
+    if not evento_db:
+        raise HTTPException(status_code=404, detail="Evento não encontrado")
+    
+    # Atualizar campos se fornecidos
+    if evento.nome is not None:
+        setattr(evento_db, 'nome', evento.nome)
+    if evento.admin_id is not None:
+        setattr(evento_db, 'admin_id', evento.admin_id)
+    
+    db.commit()
+    db.refresh(evento_db)
+    return evento_db
+
+# Deletar evento por ID
+@app.delete("/eventos/{evento_id}")
+def deletar_evento(evento_id: int, db: Session = Depends(get_db)):
+    evento_db = db.query(Event).filter(Event.id == evento_id).first()
+    if not evento_db:
+        raise HTTPException(status_code=404, detail="Evento não encontrado")
+    
+    db.delete(evento_db)
+    db.commit()
+    return {"message": "Evento deletado com sucesso"}
+
 # Atualizar edição
 @app.put("/edicoes/{edicao_id}", response_model=EditionRead)
 def atualizar_edicao(edicao_id: int, edicao: EditionCreate, db: Session = Depends(get_db)):
@@ -125,8 +164,8 @@ def atualizar_edicao(edicao_id: int, edicao: EditionCreate, db: Session = Depend
     if not edicao_db:
         raise HTTPException(status_code=404, detail="Edição não encontrada")
     
-    edicao_db.ano = edicao.ano
-    edicao_db.evento_id = edicao.evento_id
+    setattr(edicao_db, 'ano', edicao.ano)
+    setattr(edicao_db, 'evento_id', edicao.evento_id)
     db.commit()
     db.refresh(edicao_db)
     return edicao_db
@@ -142,34 +181,6 @@ def deletar_edicao(edicao_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Edição deletada com sucesso"}
 
-@app.get("/eventos", response_model=list[EventoRead])
-def listar_eventos(db: Session = Depends(get_db)):
-    return db.query(Event).all()
-
-@app.get("/eventos/{slug}", response_model=EventoRead)
-def obter_evento_por_slug(slug: str, db: Session = Depends(get_db)):
-    evento = db.query(Event).filter(Event.slug == slug).first()
-    if not evento:
-        raise HTTPException(status_code=404, detail="Evento não encontrado")
-    return evento
-
-# ----------------------
-# Edições
-# ----------------------
-@app.post("/edicoes", response_model=EditionRead)
-def criar_edicao(edicao: EditionCreate, db: Session = Depends(get_db)):
-    edicao_existente = db.query(Edition).filter(Edition.ano == edicao.ano and Edition.evento_id == edicao.evento_id)
-    if edicao_existente:
-        raise HTTPException(
-            status_code = 400,
-            detail = "Já existe um evento com essa sigla"
-        )
-    nova_edicao = Edition(evento_id=edicao.evento_id, ano=edicao.ano)
-    db.add(nova_edicao)
-    db.commit()
-    db.refresh(nova_edicao)
-    return nova_edicao
-
 @app.get("/edicoes", response_model=list[EditionRead])
 def listar_edicoes(db: Session = Depends(get_db)):
     return db.query(Edition).all()
@@ -179,23 +190,8 @@ def listar_edicoes_do_evento(evento_slug: str, db: Session = Depends(get_db)):
     evento = db.query(Event).filter(Event.slug == evento_slug).first()
     if not evento:
         raise HTTPException(status_code=404, detail="Evento não encontrado")
-    
     edicoes = db.query(Edition).filter(Edition.evento_id == evento.id).all()
-    
-    # Adicionar contagem de artigos para cada edição
-    result = []
-    for edicao in edicoes:
-        artigos_count = db.query(Article).filter(Article.edicao_id == edicao.id).count()
-        edicao_dict = {
-            "id": edicao.id,
-            "evento_id": edicao.evento_id,
-            "ano": edicao.ano,
-            "slug": edicao.slug,
-            "total_artigos": artigos_count
-        }
-        result.append(edicao_dict)
-    
-    return result
+    return edicoes
 
 @app.get("/eventos/{evento_slug}/{ano}", response_model=EditionRead)
 def obter_edicao_por_slug_e_ano(evento_slug: str, ano: int, db: Session = Depends(get_db)):
@@ -340,6 +336,16 @@ def listar_artigos(autor_id: int | None = None, db: Session = Depends(get_db)):
         query = query.join(Article.authors).filter(Author.id == autor_id)
     return query.all()
 
+@app.delete("/artigos/{artigo_id}")
+def deletar_artigo(artigo_id: int, db: Session = Depends(get_db)):
+    artigo_db = db.query(Article).filter(Article.id == artigo_id).first()
+    if not artigo_db:
+        raise HTTPException(status_code=404, detail="Artigo não encontrado")
+    
+    db.delete(artigo_db)
+    db.commit()
+    return {"message": "Artigo deletado com sucesso"}
+
 # ----------------------
 # Usuários
 # ----------------------
@@ -398,7 +404,8 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
         return {"token": token, "user": {
             "id": user.id,
             "nome": user.nome,
-            "email": str(user.email)
+            "email": str(user.email),
+            "perfil": user.perfil
         }}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao gerar token: {str(e)}")

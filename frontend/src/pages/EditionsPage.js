@@ -9,6 +9,7 @@ const EditionsPage = ({ data: editions, loading, error }) => {
 
   if (loading) return <LoadingSpinner message="Carregando edições..." />;
   if (error) return <div className="text-center py-12 text-red-600">Erro: {error}</div>;
+  if (!editions || !Array.isArray(editions)) return <div className="text-center py-12">Nenhuma edição encontrada.</div>;
 
   const years = [...new Set(editions.map(e => e.ano))].sort((a, b) => b - a);
   

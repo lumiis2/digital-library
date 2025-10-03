@@ -1,0 +1,418 @@
+nohup: ignoring input
+INFO:     Started server process [345678]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:53482 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58722 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58708 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58724 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58698 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58746 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58740 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58746 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58698 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50516 - "POST /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36254 - "PUT /eventos/2 HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.ForeignKeyViolation: insert or update on table "evento" violates foreign key constraint "evento_admin_id_fkey"
+DETAIL:  Key (admin_id)=(1) is not present in table "usuario".
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/fastapi/applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/applications.py", line 113, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 78, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 75, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 302, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 215, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/concurrency.py", line 38, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/anyio/to_thread.py", line 56, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 2476, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 967, in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/digital-library/backend/app/main.py", line 145, in atualizar_evento
+    db.commit()
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2032, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 1313, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 1288, in _prepare_impl
+    self.session.flush()
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4345, in flush
+    self._flush(objects)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4480, in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4441, in _flush
+    flush_context.execute()
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/persistence.py", line 85, in save_obj
+    _emit_update_statements(
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/persistence.py", line 912, in _emit_update_statements
+    c = connection.execute(
+        ^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.IntegrityError: (psycopg2.errors.ForeignKeyViolation) insert or update on table "evento" violates foreign key constraint "evento_admin_id_fkey"
+DETAIL:  Key (admin_id)=(1) is not present in table "usuario".
+
+[SQL: UPDATE evento SET nome=%(nome)s, admin_id=%(admin_id)s WHERE evento.id = %(evento_id)s]
+[parameters: {'nome': 'Evento Admin Editado', 'admin_id': 1, 'evento_id': 2}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+INFO:     127.0.0.1:36644 - "GET /eventos/2 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:36648 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43832 - "GET /eventos/TEA2024 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50116 - "PUT /eventos/2 HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.ForeignKeyViolation: insert or update on table "evento" violates foreign key constraint "evento_admin_id_fkey"
+DETAIL:  Key (admin_id)=(1) is not present in table "usuario".
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/fastapi/applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/applications.py", line 113, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 78, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/routing.py", line 75, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 302, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/fastapi/routing.py", line 215, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/starlette/concurrency.py", line 38, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/anyio/to_thread.py", line 56, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 2476, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 967, in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/digital-library/backend/app/main.py", line 145, in atualizar_evento
+    db.commit()
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2032, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 1313, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 1288, in _prepare_impl
+    self.session.flush()
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4345, in flush
+    self._flush(objects)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4480, in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4441, in _flush
+    flush_context.execute()
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/persistence.py", line 85, in save_obj
+    _emit_update_statements(
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/orm/persistence.py", line 912, in _emit_update_statements
+    c = connection.execute(
+        ^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/home/rafael-paniago/anaconda3/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.IntegrityError: (psycopg2.errors.ForeignKeyViolation) insert or update on table "evento" violates foreign key constraint "evento_admin_id_fkey"
+DETAIL:  Key (admin_id)=(1) is not present in table "usuario".
+
+[SQL: UPDATE evento SET nome=%(nome)s, admin_id=%(admin_id)s WHERE evento.id = %(evento_id)s]
+[parameters: {'nome': 'Evento Admin Editado', 'admin_id': 1, 'evento_id': 2}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+INFO:     127.0.0.1:46920 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46924 - "PUT /eventos/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36114 - "POST /api/auth/register HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57526 - "PUT /eventos/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38142 - "DELETE /eventos/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59428 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56132 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56146 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56118 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56112 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56174 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56132 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56162 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56118 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48376 - "OPTIONS /api/auth/register HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48376 - "POST /api/auth/register HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50524 - "OPTIONS /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50524 - "POST /api/auth/login HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:52818 - "POST /api/auth/register HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56828 - "POST /api/auth/register HTTP/1.1" 409 Conflict
+INFO:     127.0.0.1:52640 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40018 - "GET /autores/default_slug/artigos HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:40032 - "GET /autores/default_slug/artigos HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:40032 - "GET /eventos/default_slug HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40018 - "GET /eventos/default_slug HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40018 - "GET /eventos/default_slug/edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40032 - "GET /eventos/default_slug/edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34694 - "GET /autores/eventos/artigos HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:34722 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34736 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34706 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34752 - "GET /autores/eventos/artigos HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:34694 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34752 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34696 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34722 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34694 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34722 - "GET /eventos/eventos HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:34694 - "GET /eventos/eventos HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56780 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56772 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56784 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56762 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56792 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56780 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56772 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56784 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50110 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50116 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50120 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50098 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50124 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50116 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50138 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50120 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50488 - "GET /autores/eventos/artigos HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50516 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50512 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50508 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50502 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50522 - "GET /autores/eventos/artigos HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50488 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50516 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50512 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50508 - "GET /eventos/eventos HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50488 - "GET /eventos/eventos HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50502 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50488 - "GET /autores/eventos/artigos HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50502 - "GET /autores/eventos/artigos HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50502 - "GET /eventos/eventos HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50488 - "GET /eventos/eventos HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50488 - "GET /autores/eventos/artigos HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50502 - "GET /autores/eventos/artigos HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50502 - "GET /eventos/eventos HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50488 - "GET /eventos/eventos HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55626 - "OPTIONS /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55626 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50664 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50696 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50680 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50684 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50664 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50680 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50696 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50664 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50664 - "GET /eventos/articles HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50696 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50680 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50684 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50664 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50664 - "GET /eventos/articles HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50696 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50684 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50680 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50664 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45854 - "GET /autores/admin/artigos HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:45856 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45872 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45866 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45882 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45856 - "GET /autores/admin/artigos HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:45882 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45856 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45866 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45856 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45856 - "GET /eventos/admin HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:45856 - "GET /eventos/admin HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55032 - "GET /eventos/admin HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55044 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55038 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55058 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55034 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55032 - "GET /eventos/admin HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55038 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55044 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55058 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55034 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37630 - "GET /autores/profile/artigos HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:37630 - "GET /autores/profile/artigos HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:37630 - "GET /eventos/profile HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:37630 - "GET /eventos/profile HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54156 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59726 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59704 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59710 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59702 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59704 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59726 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59730 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59710 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59710 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59726 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59704 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59702 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59704 - "GET /edicoes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59726 - "GET /eventos HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59710 - "GET /autores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59702 - "GET /artigos HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [345678]

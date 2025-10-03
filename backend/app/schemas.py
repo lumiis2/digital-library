@@ -13,10 +13,15 @@ class EventoRead(BaseModel):
     id: int
     nome: str
     slug: str
+    admin_id: Optional[int] = None
 
     model_config = {
         "from_attributes": True  # <- substitui orm_mode
     }
+
+class EventoUpdate(BaseModel):
+    nome: Optional[str] = None
+    admin_id: Optional[int] = None
 
 # ----------------------
 # Edição
@@ -82,11 +87,13 @@ class UserCreate(BaseModel):
     nome: str
     email: EmailStr
     senha_hash: str
+    perfil: Optional[str] = "usuario"
 
 class UserRead(BaseModel):
     id: int
     nome: str
     email: EmailStr
+    perfil: Optional[str] = "usuario"
     receive_notifications: Optional[int] = 1
 
     model_config = ConfigDict(from_attributes=True)

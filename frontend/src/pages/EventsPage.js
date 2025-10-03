@@ -3,9 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { SearchIcon} from '../components/common/Icons';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import EventCard from '../components/cards/EventCard';
+import { useAuth } from '../components/common/AuthContext';
 
 const EventsPage = ({ data: events, loading, error }) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const navigate = useNavigate();
+  const { isAdmin, isAuthenticated } = useAuth();
 
   if (loading) return <LoadingSpinner message="Carregando eventos..." />;
   if (error) return <div className="text-center py-12 text-red-600">Erro: {error}</div>;
@@ -18,11 +21,24 @@ const EventsPage = ({ data: events, loading, error }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Eventos</h1>
-          <p className="text-gray-600">
-            Conheça os {events.length} eventos acadêmicos de nossa biblioteca
-          </p>
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Eventos</h1>
+            <p className="text-gray-600">
+              Conheça os {events.length} eventos acadêmicos de nossa biblioteca
+            </p>
+          </div>
+          {isAuthenticated && isAdmin() && (
+            <button
+              onClick={() => navigate('/admin/events')}
+              className="px-4 py-2 bg-floresta text-papel rounded-lg hover:bg-floresta/90 font-semibold transition-colors flex items-center space-x-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              <span>Cadastrar Evento</span>
+            </button>
+          )}
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">

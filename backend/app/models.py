@@ -20,6 +20,7 @@ class Event(Base):
     id = Column(Integer, primary_key=True, index=True)
     slug = Column(String(64), unique=True, nullable=False, index=True)
     nome = Column(String(255), nullable=False)
+    admin_id = Column(Integer, ForeignKey("usuario.id"), nullable=True)
     editions = relationship("Edition", back_populates="event")
     
 

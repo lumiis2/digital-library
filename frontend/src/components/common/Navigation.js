@@ -165,7 +165,7 @@ const Navigation = () => {
                           if (isAdmin()) {
                             navigate('/admin/events');
                           } else {
-                            navigate('/events'); // Ajuste conforme a rota correta para usuários não admin
+                            navigate('/events');
                           }
                           setIsUserMenuOpen(false);
                         }}
