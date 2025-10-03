@@ -140,7 +140,7 @@ const Navigation = () => {
                       </button>
                       <button
                         onClick={() => {
-                          navigate('/profile');
+                          navigate('/configuracoes');
                           setIsUserMenuOpen(false);
                         }}
                         className="block w-full text-left px-4 py-2 text-floresta hover:bg-floresta hover:text-papel rounded transition-colors"

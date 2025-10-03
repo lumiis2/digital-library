@@ -122,6 +122,13 @@ def criar_evento(evento: EventoCreate, db: Session = Depends(get_db)):
 def listar_eventos(db: Session = Depends(get_db)):
     return db.query(Event).all()
 
+@app.get("/eventos/by-id/{evento_id}", response_model=EventoRead)
+def obter_evento_por_id(evento_id: int, db: Session = Depends(get_db)):
+    evento = db.query(Event).filter(Event.id == evento_id).first()
+    if not evento:
+        raise HTTPException(status_code=404, detail="Evento não encontrado")
+    return evento
+
 @app.get("/eventos/{slug}", response_model=EventoRead)
 def obter_evento_por_slug(slug: str, db: Session = Depends(get_db)):
     evento = db.query(Event).filter(Event.slug == slug).first()

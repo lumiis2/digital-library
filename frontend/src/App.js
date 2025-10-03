@@ -11,6 +11,7 @@ import RegisterPage from './pages/RegisterPage';
 import AdminArticlesPage from './pages/AdminArticlesPage';
 import NewArticlePage from './pages/NewArticlePage';  
 import AdminDashboard from './pages/AdminDashboard';
+import AdminPanel from './pages/AdminPanel';
 import backgroundImage from './assets/background.png';
 import NewEventPage from './pages/NewEventPage';
 import EditEventPage from './pages/EditEventPage';
@@ -94,6 +95,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/my-articles" element={<AdminArticlesPage />} />
+            <Route path="/admin" element={<AdminPanel />} />
             <Route path="/admin/articles" element={<NewArticlePage />} />
             <Route path="/admin/events" element={<NewEventPage />} />
             <Route path="/dashboard" element={<AdminDashboard />} />

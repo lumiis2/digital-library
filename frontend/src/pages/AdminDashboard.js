@@ -57,6 +57,30 @@ const AdminArticlesPage = () => {
     }
   };
 
+  // Função para excluir evento
+  const handleDeleteEvent = async (id) => {
+    const confirmar = window.confirm(
+      "Tem certeza que deseja excluir este evento?"
+    );
+    if (!confirmar) return;
+
+    try {
+      const res = await fetch(`http://localhost:8000/eventos/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        throw new Error("Erro ao excluir evento");
+      }
+
+      // Remove o evento do estado
+      setEvents((prev) => prev.filter((e) => e.id !== id));
+      alert("Evento excluído com sucesso!");
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-6">
       <div className="max-w-6xl mx-auto space-y-12">
@@ -140,13 +164,23 @@ const AdminArticlesPage = () => {
                     <span className="font-semibold">Sigla:</span> {event.slug}
                   </p>
 
-                  {/* Botão de editar evento */}
-                  <button
-                    onClick={() => navigate(`/admin/events/${event.id}/edit`)}
-                    className="px-4 py-1 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition text-sm"
-                  >
-                    Editar
-                  </button>
+                  <div className="flex space-x-2">
+                    {/* Botão de editar evento */}
+                    <button
+                      onClick={() => navigate(`/admin/events/${event.id}/edit`)}
+                      className="px-4 py-1 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition text-sm"
+                    >
+                      Editar
+                    </button>
+
+                    {/* Botão de excluir evento */}
+                    <button
+                      onClick={() => handleDeleteEvent(event.id)}
+                      className="px-4 py-1 bg-red-600 text-white rounded shadow hover:bg-red-700 transition text-sm"
+                    >
+                      Excluir
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

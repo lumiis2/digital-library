@@ -14,7 +14,7 @@ const EditEventPage = () => {
 
   // Buscar dados do evento ao carregar
   useEffect(() => {
-    fetch(`http://localhost:8000/eventos/id/${id}`)
+    fetch(`http://localhost:8000/eventos/by-id/${id}`)
       .then((res) => {
         if (!res.ok) throw new Error("Erro ao buscar evento");
         return res.json();
@@ -28,7 +28,8 @@ const EditEventPage = () => {
         setLoading(false);
       })
       .catch((err) => {
-        alert(err.message);
+        console.error("Erro ao carregar evento:", err);
+        alert("Erro ao carregar dados do evento: " + err.message);
         navigate("/admin");
       });
   }, [id, navigate]);
