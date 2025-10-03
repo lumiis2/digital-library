@@ -1,14 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SearchIcon} from '../components/common/Icons';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import EventCard from '../components/cards/EventCard';
 import { useAuth } from '../components/common/AuthContext';
 
-const EventsPage = ({ data: events, loading, error }) => {
+const EventsPage = ({ data: events, loading, error, onReload }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
   const { isAdmin, isAuthenticated } = useAuth();
+
+  // Recarregar eventos quando a página carregar
+  useEffect(() => {
+    if (onReload) {
+      onReload();
+    }
+  }, [onReload]); // Incluir onReload nas dependências
 
   if (loading) return <LoadingSpinner message="Carregando eventos..." />;
   if (error) return <div className="text-center py-12 text-red-600">Erro: {error}</div>;

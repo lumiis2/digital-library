@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom'; // <-- adicione useNavigate
 import Navigation from './components/common/Navigation';
 import HomePage from './pages/HomePage';
@@ -32,6 +32,15 @@ function App() {
 
   const navigate = useNavigate(); // <-- hook para navegação
 
+  // Função para recarregar eventos
+  const reloadEventos = useCallback(() => {
+    setLoadingEventos(true);
+    fetch("http://localhost:8000/eventos")
+      .then(res => res.json())
+      .then(data => { setEventos(data); setLoadingEventos(false); })
+      .catch(() => setLoadingEventos(false));
+  }, []);
+
   useEffect(() => {
     fetch("http://localhost:8000/artigos")
       .then(res => res.json())
@@ -47,10 +56,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    fetch("http://localhost:8000/eventos")
-      .then(res => res.json())
-      .then(data => { setEventos(data); setLoadingEventos(false); })
-      .catch(() => setLoadingEventos(false));
+    reloadEventos();
   }, []);
 
   useEffect(() => {
@@ -83,7 +89,7 @@ function App() {
             />
             <Route path="/articles" element={<ArticlesPage artigos={artigos} loading={loadingArtigos} />} />
             <Route path="/authors" element={<AuthorsPage data={autores} loading={loadingAutores} />} />
-            <Route path="/events" element={<EventsPage data={eventos} loading={loadingEventos} />} />
+            <Route path="/events" element={<EventsPage data={eventos} loading={loadingEventos} onReload={reloadEventos} />} />
             <Route path="/editions" element={<EditionsPage data={edicoes} loading={loadingEdicoes} />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />

@@ -112,7 +112,7 @@ def criar_evento(evento: EventoCreate, db: Session = Depends(get_db)):
             status_code = 400,
             detail="Já existe um evento com essa sigla registrado no banco de dados"
         )
-    novo_evento = Event(nome=evento.nome, slug=evento.sigla)
+    novo_evento = Event(nome=evento.nome, slug=evento.sigla, admin_id=evento.admin_id)
     db.add(novo_evento)
     db.commit()
     db.refresh(novo_evento)

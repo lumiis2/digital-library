@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../components/common/AuthContext";
 
 const NewEventPage = () => {
   const [form, setForm] = useState({
@@ -7,6 +8,7 @@ const NewEventPage = () => {
     sigla: ""
   });
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleChange = (e) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -16,10 +18,16 @@ const NewEventPage = () => {
     e.preventDefault();
 
     try {
+      // Incluir admin_id no payload
+      const eventData = {
+        ...form,
+        admin_id: user?.id // Adiciona o ID do usuário logado
+      };
+
       const res = await fetch("http://localhost:8000/eventos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(eventData),
       });
 
       if (!res.ok) {
