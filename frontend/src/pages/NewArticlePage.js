@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 const NewArticlePage = ({ onReload }) => {
+  const { id } = useParams(); // Para detectar se é edição
+  const isEditing = !!id;
   const [form, setForm] = useState({
     titulo: "",
     pdf_path: "",
@@ -23,6 +25,26 @@ const NewArticlePage = ({ onReload }) => {
       .then(data => setEdicoes(data))
       .catch(err => console.error(err));
   }, []);
+
+  // Carregar dados do artigo se for edição
+  useEffect(() => {
+    if (isEditing) {
+      fetch(`http://localhost:8000/artigos/${id}`)
+        .then(res => res.json())
+        .then(data => {
+          setForm({
+            titulo: data.titulo || "",
+            pdf_path: data.pdf_path || "",
+            area: data.area || "",
+            palavras_chave: data.palavras_chave || "",
+            edicao_id: data.edicao_id || "",
+            author_ids: data.authors?.map(a => a.id) || []
+          });
+          setAutores(data.authors || []);
+        })
+        .catch(err => console.error(err));
+    }
+  }, [id, isEditing]);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -111,7 +133,7 @@ const NewArticlePage = ({ onReload }) => {
         }
       }
 
-      // Criar o artigo
+      // Criar ou atualizar o artigo
       const payload = {
         ...form,
         pdf_path: pdfPath,
@@ -119,26 +141,29 @@ const NewArticlePage = ({ onReload }) => {
         author_ids: form.author_ids.length ? form.author_ids : []
       };
 
-      const res = await fetch("http://localhost:8000/artigos", {
-        method: "POST",
+      const url = isEditing ? `http://localhost:8000/artigos/${id}` : "http://localhost:8000/artigos";
+      const method = isEditing ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.detail || "Erro ao cadastrar artigo");
+        throw new Error(errData.detail || `Erro ao ${isEditing ? 'atualizar' : 'cadastrar'} artigo`);
       }
 
       await res.json();
-      alert("Artigo cadastrado com sucesso!");
+      alert(`Artigo ${isEditing ? 'atualizado' : 'cadastrado'} com sucesso!`);
       
       // Recarregar lista de artigos
       if (onReload) {
         onReload();
       }
       
-      navigate("/my-articles");
+      navigate(isEditing ? "/dashboard" : "/my-articles");
     } catch (err) {
       alert(err.message);
     }
@@ -148,7 +173,7 @@ const NewArticlePage = ({ onReload }) => {
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
       <div className="bg-white shadow-lg rounded-lg p-8 w-full max-w-lg border border-gray-200">
         <h2 className="text-2xl font-bold text-floresta mb-6 text-center">
-          Cadastrar Novo Artigo
+          {isEditing ? 'Editar Artigo' : 'Cadastrar Novo Artigo'}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
@@ -262,7 +287,7 @@ const NewArticlePage = ({ onReload }) => {
             type="submit"
             className="w-full px-4 py-2 bg-floresta text-papel rounded hover:bg-floresta/90 font-semibold"
           >
-            Salvar
+            {isEditing ? 'Atualizar Artigo' : 'Salvar Artigo'}
           </button>
         </form>
       </div>

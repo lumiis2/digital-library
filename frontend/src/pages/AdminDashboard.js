@@ -131,12 +131,23 @@ const AdminDashboard = ({
                     {article.palavras_chave}
                   </p>
 
-                  <button
-                    onClick={() => handleDeleteArticle(article.id)}
-                    className="px-4 py-1 bg-red-600 text-white rounded shadow hover:bg-red-700 transition text-sm"
-                  >
-                    Excluir
-                  </button>
+                  <div className="flex space-x-2">
+                    {/* Botão de editar artigo */}
+                    <button
+                      onClick={() => navigate(`/admin/articles/${article.id}/edit`)}
+                      className="px-4 py-1 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition text-sm"
+                    >
+                      Editar
+                    </button>
+
+                    {/* Botão de excluir artigo */}
+                    <button
+                      onClick={() => handleDeleteArticle(article.id)}
+                      className="px-4 py-1 bg-red-600 text-white rounded shadow hover:bg-red-700 transition text-sm"
+                    >
+                      Excluir
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

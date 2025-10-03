@@ -128,6 +128,7 @@ function App() {
             <Route path="/my-articles" element={<AdminArticlesPage artigos={artigos} onReload={reloadArtigos} />} />
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/admin/articles" element={<NewArticlePage onReload={reloadArtigos} />} />
+            <Route path="/admin/articles/:id/edit" element={<NewArticlePage onReload={reloadArtigos} />} />
             <Route path="/admin/import-bibtex" element={<ImportBibtexPage onReload={reloadArtigos} />} />
             <Route path="/admin/events" element={<NewEventPage />} />
             <Route path="/dashboard" element={<AdminDashboard 

@@ -363,6 +363,37 @@ async def criar_artigo(artigo: ArticleCreate, db: Session = Depends(get_db)):
 
     return novo_artigo
 
+@app.put("/artigos/{artigo_id}", response_model=ArticleRead)
+async def atualizar_artigo(artigo_id: int, artigo: ArticleCreate, db: Session = Depends(get_db)):
+    artigo_existente = db.query(Article).filter(Article.id == artigo_id).first()
+    if not artigo_existente:
+        raise HTTPException(status_code=404, detail="Artigo não encontrado")
+    
+    # Atualizar dados do artigo
+    artigo_existente.titulo = artigo.titulo
+    artigo_existente.pdf_path = artigo.pdf_path
+    artigo_existente.area = artigo.area
+    artigo_existente.palavras_chave = artigo.palavras_chave
+    artigo_existente.edicao_id = artigo.edicao_id
+    
+    # Atualizar autores
+    if artigo.author_ids:
+        autores = db.query(Author).filter(Author.id.in_(artigo.author_ids)).all()
+        artigo_existente.authors = autores
+    else:
+        artigo_existente.authors = []
+    
+    db.commit()
+    db.refresh(artigo_existente)
+    return artigo_existente
+
+@app.get("/artigos/{artigo_id}", response_model=ArticleRead)
+def obter_artigo(artigo_id: int, db: Session = Depends(get_db)):
+    artigo = db.query(Article).filter(Article.id == artigo_id).first()
+    if not artigo:
+        raise HTTPException(status_code=404, detail="Artigo não encontrado")
+    return artigo
+
 #@app.get("/artigos", response_model=list[ArticleRead])
 #def listar_artigos(db: Session = Depends(get_db)):
 #    return db.query(Article).all()
