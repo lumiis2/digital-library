@@ -34,12 +34,18 @@ function App() {
   const navigate = useNavigate(); // <-- hook para navegação
 
   // Função para recarregar eventos
-  const reloadEventos = useCallback(() => {
-    setLoadingEventos(true);
+    const reloadEventos = useCallback(() => {
     fetch("http://localhost:8000/eventos")
       .then(res => res.json())
       .then(data => { setEventos(data); setLoadingEventos(false); })
       .catch(() => setLoadingEventos(false));
+  }, []);
+
+  const reloadEdicoes = useCallback(() => {
+    fetch("http://localhost:8000/edicoes")
+      .then(res => res.json())
+      .then(data => { setEdicoes(data); setLoadingEdicoes(false); })
+      .catch(() => setLoadingEdicoes(false));
   }, []);
 
   useEffect(() => {
@@ -58,14 +64,11 @@ function App() {
 
   useEffect(() => {
     reloadEventos();
-  }, []);
+  }, [reloadEventos]);
 
   useEffect(() => {
-    fetch("http://localhost:8000/edicoes")
-      .then(res => res.json())
-      .then(data => { setEdicoes(data); setLoadingEdicoes(false); })
-      .catch(() => setLoadingEdicoes(false));
-  }, []);
+    reloadEdicoes();
+  }, [reloadEdicoes]);
 
   
 
@@ -91,7 +94,7 @@ function App() {
             <Route path="/articles" element={<ArticlesPage artigos={artigos} loading={loadingArtigos} />} />
             <Route path="/authors" element={<AuthorsPage data={autores} loading={loadingAutores} />} />
             <Route path="/events" element={<EventsPage data={eventos} loading={loadingEventos} onReload={reloadEventos} />} />
-            <Route path="/editions" element={<EditionsPage data={edicoes} loading={loadingEdicoes} />} />
+            <Route path="/editions" element={<EditionsPage data={edicoes} loading={loadingEdicoes} onReload={reloadEdicoes} />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/my-articles" element={<AdminArticlesPage />} />

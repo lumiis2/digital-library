@@ -1,11 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SearchIcon} from '../components/common/Icons';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import EditionCard from '../components/cards/EditionCard';
 
-const EditionsPage = ({ data: editions, loading, error }) => {
+const EditionsPage = ({ data: editions, loading, error, onReload }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedYear, setSelectedYear] = useState("all");
+
+  // Auto-reload quando a página é carregada
+  useEffect(() => {
+    if (onReload) {
+      onReload();
+    }
+  }, [onReload]);
 
   if (loading) return <LoadingSpinner message="Carregando edições..." />;
   if (error) return <div className="text-center py-12 text-red-600">Erro: {error}</div>;
@@ -14,8 +21,7 @@ const EditionsPage = ({ data: editions, loading, error }) => {
   const years = [...new Set(editions.map(e => e.ano))].sort((a, b) => b - a);
   
   const filteredEditions = editions.filter(edition => {
-    const matchesSearch = edition.ano?.toString().includes(searchTerm) ||
-                         edition.evento_id?.nome?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = edition.ano?.toString().includes(searchTerm);
     const matchesYear = selectedYear === "all" || edition.ano?.toString() === selectedYear;
     return matchesSearch && matchesYear;
   });
