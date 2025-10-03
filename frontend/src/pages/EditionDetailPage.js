@@ -174,7 +174,7 @@ function EditionDetailPage() {
           {artigos.length > 0 ? (
             <div className="grid grid-cols-1 gap-6">
               {artigos.map((artigo) => (
-                <ArticleCard key={artigo.id} article={artigo} />
+                <ArticleCard key={artigo.id} artigo={artigo} />
               ))}
             </div>
           ) : (
