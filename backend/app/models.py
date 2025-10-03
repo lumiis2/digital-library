@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Date, Table, Index
+from sqlalchemy import Column, Integer, String, ForeignKey, Date, Table, Index, func
 from sqlalchemy.orm import relationship
 from .database import Base
+from datetime import date
 
 # Tabela associativa N:N entre artigos e autores
 artigo_autor = Table(
@@ -17,7 +18,6 @@ artigo_autor = Table(
 class Event(Base):
     __tablename__ = "evento"
     id = Column(Integer, primary_key=True, index=True)
-    admin_id = Column(Integer, ForeignKey("usuario.id"))
     slug = Column(String(64), unique=True, nullable=False, index=True)
     nome = Column(String(255), nullable=False)
     editions = relationship("Edition", back_populates="event")
@@ -70,9 +70,29 @@ class User(Base):
     nome = Column(String(100), nullable=False)
     email = Column(String(255), unique=True, nullable=False, index=True)
     senha_hash = Column(String(255), nullable=False)
-    perfil = Column(String(20), default="usuario")  # "usuario" ou "admin"
-    notificar_novos_artigos = Column(
-        Integer, default=1
-    )  # 1 = receber emails sobre novos artigos, 0 = não receber
+    perfil = Column(String(20), default="usuario")  # <-- ADICIONE ESTA LINHA
+    receive_notifications = Column(Integer, default=1)  # <-- MANTENHA ESTA (já existe)
+    notifications = relationship("Notification", back_populates="user")
 
-    # Futuramente, adicione outros campos de preferências conforme necessário
+
+class Notification(Base):
+    __tablename__ = "notificacao"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("usuario.id"), nullable=False)
+    author_id = Column(Integer, ForeignKey("autor.id"), nullable=False)  # Autor que o user quer seguir
+    is_active = Column(Integer, default=1)  # 1=ativa, 0=desativa
+    created_at = Column(Date, nullable=False, default=date.today)
+    
+    user = relationship("User", back_populates="notifications")
+    author = relationship("Author")
+
+
+class EmailLog(Base):
+    __tablename__ = "email_log"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("usuario.id"))
+    article_id = Column(Integer, ForeignKey("artigo.id"))
+    author_id = Column(Integer, ForeignKey("autor.id"))
+    sent_at = Column(Date, nullable=False)
+    email_subject = Column(String(255))
+    status = Column(String(50))  # 'sent', 'failed', 'pending'

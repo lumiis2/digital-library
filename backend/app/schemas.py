@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
 from datetime import date
+from typing import Optional
 
 # ----------------------
 # Evento
@@ -7,13 +8,11 @@ from datetime import date
 class EventoCreate(BaseModel):
     nome: str
     sigla: str
-    admin_id: int | None #None ´eprovisório, pq os dados que já estão no bd estão sem admin_id
 
 class EventoRead(BaseModel):
     id: int
     nome: str
     slug: str
-    admin_id: int
 
     model_config = {
         "from_attributes": True  # <- substitui orm_mode
@@ -46,6 +45,7 @@ class AuthorRead(BaseModel):
     id: int
     nome: str
     sobrenome: str
+    slug: Optional[str] = None
 
     model_config = {
         "from_attributes": True  # <- substitui orm_mode
@@ -56,9 +56,9 @@ class AuthorRead(BaseModel):
 # ----------------------
 class ArticleCreate(BaseModel):
     titulo: str
-    pdf_path: str = None
-    area: str = None
-    palavras_chave: str = None
+    pdf_path: Optional[str] = None
+    area: Optional[str] = None
+    palavras_chave: Optional[str] = None
     edicao_id: int
     author_ids: list[int] = []
 
@@ -87,12 +87,28 @@ class UserRead(BaseModel):
     id: int
     nome: str
     email: EmailStr
-    perfil: str
-    notificar_novos_artigos: int  # 1 = recebe emails, 0 = não recebe
+    receive_notifications: Optional[int] = 1
 
     model_config = ConfigDict(from_attributes=True)
+
+# ----------------------
+# Notificações
+# ----------------------
+class NotificationCreate(BaseModel):
+    author_id: int
+
+class NotificationRead(BaseModel):
+    id: int
+    user_id: int
+    author_id: int
+    is_active: int
+    created_at: date
+
+    model_config = ConfigDict(from_attributes=True)
+
+class NotificationSettings(BaseModel):
+    receive_notifications: bool
 
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
-    perfil: str

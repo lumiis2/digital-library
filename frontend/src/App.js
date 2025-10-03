@@ -92,12 +92,21 @@ function App() {
             <Route path="/admin/events" element={<NewEventPage />} />
             <Route path="/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/events/:id/edit" element={<EditEventPage/>} />
-            <Route path="/eventos/:slug" element={<EventDetailPage />} />
-            <Route path="/eventos/:slug/:ano" element={<EditionDetailPage />} />
-            <Route path="/autores/:slug" element={<AuthorDetailPage />} />
             <Route path="/configuracoes" element={<UserSettingsPage />} />
             <Route path="/admin/edicoes/new" element={<NewEditionPage />} />
             <Route path="/admin/edicoes/:id/edit" element={<NewEditionPage />} />
+            
+            {/* Rotas originais (mantidas para compatibilidade) */}
+            <Route path="/eventos/:slug" element={<EventDetailPage />} />
+            <Route path="/eventos/:slug/:ano" element={<EditionDetailPage />} />
+            <Route path="/edicoes/:eventoId/:ano" element={<EditionDetailPage />} />
+            <Route path="/autores/:slug" element={<AuthorDetailPage />} />
+            
+            {/* Rotas amigáveis para eventos, edições e autores - devem vir por último */}
+            <Route path="/author/:authorId" element={<AuthorDetailPage />} />
+            <Route path="/:authorSlug" element={<AuthorDetailPage />} />
+            <Route path="/:eventSlug/:year" element={<EditionDetailPage />} />
+            <Route path="/:eventSlug" element={<EventDetailPage />} />
           </Routes>
         </div>
       </div>
