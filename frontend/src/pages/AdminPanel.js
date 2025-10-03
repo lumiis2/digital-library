@@ -62,6 +62,9 @@ const AdminPanel = () => {
               <Link to="/admin/articles" className="block w-full bg-green-600 text-white text-center py-2 px-4 rounded hover:bg-green-700">
                 Novo Artigo
               </Link>
+              <Link to="/admin/import-bibtex" className="block w-full bg-orange-600 text-white text-center py-2 px-4 rounded hover:bg-orange-700">
+                Importar BibTeX
+              </Link>
               <Link to="/my-articles" className="block w-full bg-gray-200 text-gray-700 text-center py-2 px-4 rounded hover:bg-gray-300">
                 Meus Artigos
               </Link>

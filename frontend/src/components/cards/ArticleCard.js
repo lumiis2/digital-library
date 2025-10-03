@@ -41,9 +41,8 @@ const ArticleCard = ({ artigo }) => {
 
       {artigo.pdf_path && (
         <a
-          href={`http://localhost:8000${artigo.pdf_path}`}
-          target="_blank"
-          rel="noopener noreferrer"
+          href={`http://localhost:8000${artigo.pdf_path.startsWith('/') ? '' : '/'}${artigo.pdf_path}`}
+          download
           className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
         >
           <DownloadIcon />

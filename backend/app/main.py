@@ -15,6 +15,7 @@ from email.mime.multipart import MIMEMultipart
 import asyncio
 from typing import List
 from datetime import date
+import bibtexparser
 
 
 # Configurações de email
@@ -429,6 +430,160 @@ def deletar_artigo(artigo_id: int, db: Session = Depends(get_db)):
     db.delete(artigo_db)
     db.commit()
     return {"message": "Artigo deletado com sucesso"}
+
+@app.post("/upload-bibtex")
+async def upload_bibtex(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    """
+    Endpoint para processar arquivo BibTeX e retornar artigos para preview
+    """
+    if not file.filename or not file.filename.endswith(('.bib', '.bibtex')):
+        raise HTTPException(status_code=400, detail="Apenas arquivos .bib ou .bibtex são permitidos")
+    
+    try:
+        # Ler conteúdo do arquivo
+        content = await file.read()
+        content_str = content.decode('utf-8')
+        
+        # Parsear BibTeX
+        bib_database = bibtexparser.loads(content_str)
+        
+        articles_preview = []
+        
+        for entry in bib_database.entries:
+            # Extrair informações do artigo
+            article_data = {
+                "titulo": entry.get('title', '').replace('{', '').replace('}', ''),
+                "area": entry.get('keywords', '') or entry.get('subject', ''),
+                "palavras_chave": entry.get('keywords', ''),
+                "resumo": entry.get('abstract', ''),
+                "doi": entry.get('doi', ''),
+                "categoria": entry.get('type', entry.get('ENTRYTYPE', '')),
+                "data_publicacao": entry.get('year', ''),
+                "bibtex_key": entry.get('ID', ''),
+                "authors": []
+            }
+            
+            # Processar autores
+            if 'author' in entry:
+                authors_str = entry['author']
+                # Separar autores por ' and '
+                author_names = [name.strip() for name in authors_str.split(' and ')]
+                
+                for author_name in author_names:
+                    if ',' in author_name:
+                        # Formato: "Sobrenome, Nome"
+                        parts = author_name.split(',', 1)
+                        sobrenome = parts[0].strip()
+                        nome = parts[1].strip() if len(parts) > 1 else ""
+                    else:
+                        # Formato: "Nome Sobrenome" - pegar a última palavra como sobrenome
+                        parts = author_name.strip().split()
+                        if len(parts) > 1:
+                            nome = ' '.join(parts[:-1])
+                            sobrenome = parts[-1]
+                        else:
+                            nome = parts[0] if parts else ""
+                            sobrenome = ""
+                    
+                    article_data["authors"].append({
+                        "nome": nome,
+                        "sobrenome": sobrenome
+                    })
+            
+            articles_preview.append(article_data)
+        
+        return {
+            "message": f"Arquivo processado com sucesso. Encontrados {len(articles_preview)} artigos.",
+            "articles": articles_preview,
+            "total": len(articles_preview)
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao processar arquivo BibTeX: {str(e)}")
+
+@app.post("/confirm-bibtex-import")
+async def confirm_bibtex_import(
+    request_data: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    Confirmar e salvar artigos do BibTeX no banco de dados
+    """
+    try:
+        articles = request_data.get("articles", [])
+        edicao_id = request_data.get("edicao_id")
+        
+        if not edicao_id:
+            raise HTTPException(status_code=400, detail="edicao_id é obrigatório")
+        
+        saved_articles = []
+        
+        for article_data in articles:
+            # Criar autores se não existirem
+            author_ids = []
+            for author_info in article_data.get("authors", []):
+                nome = author_info.get("nome", "")
+                sobrenome = author_info.get("sobrenome", "")
+                
+                # Procurar autor existente
+                existing_author = db.query(Author).filter(
+                    Author.nome == nome,
+                    Author.sobrenome == sobrenome
+                ).first()
+                
+                if existing_author:
+                    author_ids.append(existing_author.id)
+                else:
+                    # Criar novo autor
+                    slug = f"{nome.lower()}-{sobrenome.lower()}".replace(" ", "-")
+                    new_author = Author(
+                        nome=nome,
+                        sobrenome=sobrenome,
+                        slug=slug
+                    )
+                    db.add(new_author)
+                    db.flush()  # Para obter o ID
+                    author_ids.append(new_author.id)
+            
+            # Criar artigo
+            new_article = Article(
+                titulo=article_data.get("titulo", ""),
+                area=article_data.get("area", ""),
+                palavras_chave=article_data.get("palavras_chave", ""),
+                resumo=article_data.get("resumo", ""),
+                doi=article_data.get("doi", ""),
+                categoria=article_data.get("categoria", ""),
+                edicao_id=edicao_id,
+                pdf_path=None  # Sem PDF para importação BibTeX
+            )
+            
+            db.add(new_article)
+            db.flush()  # Para obter o ID
+            
+            # Associar autores
+            for author_id in author_ids:
+                db.execute(
+                    artigo_autor.insert().values(
+                        artigo_id=new_article.id,
+                        autor_id=author_id
+                    )
+                )
+            
+            saved_articles.append({
+                "id": new_article.id,
+                "titulo": new_article.titulo
+            })
+        
+        db.commit()
+        
+        return {
+            "message": f"Importação concluída com sucesso! {len(saved_articles)} artigos salvos.",
+            "saved_articles": saved_articles
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro ao salvar artigos: {str(e)}")
 
 # ----------------------
 # Usuários

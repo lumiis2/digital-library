@@ -12,6 +12,7 @@ import AdminArticlesPage from './pages/AdminArticlesPage';
 import NewArticlePage from './pages/NewArticlePage';  
 import AdminDashboard from './pages/AdminDashboard';
 import AdminPanel from './pages/AdminPanel';
+import ImportBibtexPage from './pages/ImportBibtexPage';
 import backgroundImage from './assets/background.png';
 import NewEventPage from './pages/NewEventPage';
 import EditEventPage from './pages/EditEventPage';
@@ -129,6 +130,7 @@ function App() {
             <Route path="/my-articles" element={<AdminArticlesPage artigos={artigos} onReload={reloadArtigos} />} />
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/admin/articles" element={<NewArticlePage onReload={reloadArtigos} />} />
+            <Route path="/admin/import-bibtex" element={<ImportBibtexPage onReload={reloadArtigos} />} />
             <Route path="/admin/events" element={<NewEventPage />} />
             <Route path="/dashboard" element={<AdminDashboard 
                   eventos={eventos} 
