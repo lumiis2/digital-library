@@ -164,6 +164,31 @@ def deletar_evento(evento_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Evento deletado com sucesso"}
 
+# Criar edição
+@app.post("/edicoes", response_model=EditionRead)
+def criar_edicao(edicao: EditionCreate, db: Session = Depends(get_db)):
+    # Verificar se o evento existe
+    evento = db.query(Event).filter(Event.id == edicao.evento_id).first()
+    if not evento:
+        raise HTTPException(status_code=404, detail="Evento não encontrado")
+    
+    # Verificar se já existe uma edição para esse evento no mesmo ano
+    edicao_existente = db.query(Edition).filter(
+        Edition.evento_id == edicao.evento_id,
+        Edition.ano == edicao.ano
+    ).first()
+    if edicao_existente:
+        raise HTTPException(status_code=400, detail="Já existe uma edição para este evento no ano especificado")
+    
+    # Gerar slug para a edição (evento_slug + ano)
+    slug = f"{evento.slug}-{edicao.ano}"
+    
+    edicao_db = Edition(ano=edicao.ano, evento_id=edicao.evento_id, slug=slug)
+    db.add(edicao_db)
+    db.commit()
+    db.refresh(edicao_db)
+    return edicao_db
+
 # Atualizar edição
 @app.put("/edicoes/{edicao_id}", response_model=EditionRead)
 def atualizar_edicao(edicao_id: int, edicao: EditionCreate, db: Session = Depends(get_db)):
