@@ -349,6 +349,7 @@ def sha256(s: str) -> str:
     return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
 ADMIN_EMAILS = {"luisalcarvalhaes@gmail.com", "outroadmin@email.com"}  # coloque os emails de admin aqui
+# senha123 
 
 @app.post("/api/auth/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -359,7 +360,8 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
             raise HTTPException(status_code=409, detail="E-mail já cadastrado")
         
         hashed = sha256(user.senha_hash)
-        new_user = User(nome=user.nome, email=str(user.email), senha_hash=hashed)
+        perfil = "admin" if str(user.email) in ADMIN_EMAILS else "usuario"
+        new_user = User(nome=user.nome, email=str(user.email), senha_hash=hashed, perfil=perfil)
         
         db.add(new_user)
         db.commit()
@@ -368,7 +370,8 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         return {"message": "Usuário registrado com sucesso", "user": {
             "id": new_user.id,
             "nome": new_user.nome,
-            "email": str(new_user.email)
+            "email": str(new_user.email),
+            "perfil": new_user.perfil  
         }}
     except HTTPException:
         raise
@@ -658,3 +661,5 @@ async def trigger_notifications(article_id: int, db: Session = Depends(get_db)):
     """Endpoint para disparar manualmente as notificações de um artigo"""
     await enviar_notificacao_novo_artigo(article_id, db)
     return {"message": "Notificações enviadas com sucesso"}
+
+Base.metadata.create_all(bind=engine)

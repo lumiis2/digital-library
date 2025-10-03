@@ -70,7 +70,8 @@ class User(Base):
     nome = Column(String(100), nullable=False)
     email = Column(String(255), unique=True, nullable=False, index=True)
     senha_hash = Column(String(255), nullable=False)
-    receive_notifications = Column(Integer, default=1)  # 1=sim, 0=não
+    perfil = Column(String(20), default="usuario")  # <-- ADICIONE ESTA LINHA
+    receive_notifications = Column(Integer, default=1)  # <-- MANTENHA ESTA (já existe)
     notifications = relationship("Notification", back_populates="user")
 
 
