@@ -60,7 +60,7 @@ function NewEditionPage() {
 
       if (res.ok) {
         alert(`Edição ${id ? 'atualizada' : 'criada'} com sucesso!`);
-        navigate('/editions');
+        navigate('/dashboard');
       } else {
         const errData = await res.json();
         setError(errData.detail || 'Erro ao salvar edição');
@@ -81,7 +81,7 @@ function NewEditionPage() {
       const res = await fetch(`http://localhost:8000/edicoes/${id}`, { method: 'DELETE' });
       if (res.ok) {
         alert('Edição deletada!');
-        navigate('/editions');
+        navigate('/dashboard');
       } else {
         const errData = await res.json();
         setError(errData.detail || 'Erro ao deletar');

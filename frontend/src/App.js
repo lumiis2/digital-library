@@ -5,7 +5,6 @@ import HomePage from './pages/HomePage';
 import ArticlesPage from './pages/ArticlesPage';
 import AuthorsPage from './pages/AuthorsPage';
 import EventsPage from './pages/EventsPage';
-import EditionsPage from './pages/EditionsPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AdminArticlesPage from './pages/AdminArticlesPage';
@@ -124,7 +123,6 @@ function App() {
             <Route path="/articles" element={<ArticlesPage artigos={artigos} loading={loadingArtigos} />} />
             <Route path="/authors" element={<AuthorsPage data={autores} loading={loadingAutores} />} />
             <Route path="/events" element={<EventsPage data={eventos} loading={loadingEventos} onReload={reloadEventos} />} />
-            <Route path="/editions" element={<EditionsPage data={edicoes} loading={loadingEdicoes} onReload={reloadEdicoes} />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/my-articles" element={<AdminArticlesPage artigos={artigos} onReload={reloadArtigos} />} />
