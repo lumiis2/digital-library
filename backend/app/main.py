@@ -22,8 +22,8 @@ import bibtexparser
 EMAIL_CONFIG = {
     "SMTP_SERVER": "smtp.gmail.com",  # Configure conforme seu provedor
     "SMTP_PORT": 587,
-    "EMAIL_FROM": "noreply@digitallibrary.com",  # Configure com seu email
-    "EMAIL_PASSWORD": "your_app_password",  # Configure com a senha do app
+    "EMAIL_FROM": "digitallibrary.test@gmail.com",  # Email de teste
+    "EMAIL_PASSWORD": "test_password_123",  # Senha temporária para teste
 }
 
 # Função para enviar email
@@ -50,18 +50,18 @@ async def send_notification_email(to_email: str, author_name: str, article_title
         
         msg.attach(MIMEText(body, 'plain'))
         
-        # Comentado para evitar erro em ambiente de desenvolvimento
-        # Em produção, descomente e configure as credenciais corretas
-        """
-        server = smtplib.SMTP(EMAIL_CONFIG["SMTP_SERVER"], EMAIL_CONFIG["SMTP_PORT"])
-        server.starttls()
-        server.login(EMAIL_CONFIG["EMAIL_FROM"], EMAIL_CONFIG["EMAIL_PASSWORD"])
-        text = msg.as_string()
-        server.sendmail(EMAIL_CONFIG["EMAIL_FROM"], to_email, text)
-        server.quit()
-        """
+        # Tentar enviar email real se as configurações estiverem válidas
+        if EMAIL_CONFIG["EMAIL_PASSWORD"] != "your_app_password" and EMAIL_CONFIG["EMAIL_FROM"] != "noreply@digitallibrary.com":
+            server = smtplib.SMTP(EMAIL_CONFIG["SMTP_SERVER"], EMAIL_CONFIG["SMTP_PORT"])
+            server.starttls()
+            server.login(EMAIL_CONFIG["EMAIL_FROM"], EMAIL_CONFIG["EMAIL_PASSWORD"])
+            text = msg.as_string()
+            server.sendmail(EMAIL_CONFIG["EMAIL_FROM"], to_email, text)
+            server.quit()
+            print(f"Email real enviado para {to_email} sobre o artigo '{article_title}'")
+        else:
+            print(f"Email simulado enviado para {to_email} sobre o artigo '{article_title}' (configuração não finalizada)")
         
-        print(f"Email de notificação enviado para {to_email} sobre o artigo '{article_title}'")
         return True
     except Exception as e:
         print(f"Erro ao enviar email: {str(e)}")
@@ -341,25 +341,8 @@ async def criar_artigo(artigo: ArticleCreate, db: Session = Depends(get_db)):
         edicao = db.query(Edition).filter(Edition.id == artigo.edicao_id).first()
         evento_nome = edicao.event.nome if edicao and edicao.event else "Evento não identificado"
         
-        # Enviar notificações por email para os autores
-        # for autor in autores:
-        #     # Buscar o usuário correspondente ao autor (se existir)
-        #     usuario = db.query(User).filter(
-        #         User.nome.ilike(f"%{autor.nome}%"),
-        #         User.notificar_novos_artigos == 1
-        #     ).first()
-        #     
-        #     if usuario:
-        #         # Enviar email de notificação de forma assíncrona
-        #         try:
-        #             await send_notification_email(
-        #                 str(usuario.email),
-        #                 f"{autor.nome} {autor.sobrenome}",
-        #                 artigo.titulo,
-        #                 evento_nome
-        #             )
-        #         except Exception as e:
-        #             print(f"Erro ao enviar notificação para {usuario.email}: {str(e)}")
+        # Enviar notificações automaticamente após criar o artigo
+        await enviar_notificacao_novo_artigo(novo_artigo.id, db)
 
     return novo_artigo
 
@@ -878,7 +861,53 @@ async def enviar_notificacao_novo_artigo(article_id: int, db: Session):
         
         # Buscar autores do artigo
         for author in article.authors:
-            # Buscar usuários que seguem este autor
+            # 1. Verificar se o próprio autor é um usuário cadastrado
+            user_author = db.query(User).filter(
+                (User.nome.ilike(f"%{author.nome}%")) & 
+                (User.receive_notifications == 1)
+            ).first()
+            
+            if user_author:
+                # Verificar se já enviou email para este artigo/usuário
+                email_sent = db.query(EmailLog).filter(
+                    (EmailLog.user_id == user_author.id) & (EmailLog.article_id == article.id)
+                ).first()
+                
+                if not email_sent:
+                    # Enviar email para o próprio autor
+                    try:
+                        await send_notification_email(
+                            str(user_author.email), 
+                            f"{str(author.nome)} {str(author.sobrenome)}", 
+                            str(article.titulo), 
+                            str(article.edition.event.nome) if article.edition and article.edition.event else "Evento"
+                        )
+                        
+                        # Registrar envio
+                        log = EmailLog(
+                            user_id=user_author.id,
+                            article_id=article.id,
+                            author_id=author.id,
+                            sent_at=date.today(),
+                            email_subject=f"Novo artigo: {str(article.titulo)}",
+                            status="sent"
+                        )
+                        db.add(log)
+                        
+                    except Exception as e:
+                        # Registrar falha
+                        log = EmailLog(
+                            user_id=user_author.id,
+                            article_id=article.id,
+                            author_id=author.id,
+                            sent_at=date.today(),
+                            email_subject=f"Novo artigo: {str(article.titulo)}",
+                            status="failed"
+                        )
+                        db.add(log)
+                        print(f"Erro ao enviar email para {str(user_author.email)}: {e}")
+            
+            # 2. Buscar usuários que seguem este autor (sistema original)
             notifications = db.query(Notification).filter(
                 (Notification.author_id == author.id) & (Notification.is_active == 1)
             ).all()
@@ -938,5 +967,139 @@ async def trigger_notifications(article_id: int, db: Session = Depends(get_db)):
     """Endpoint para disparar manualmente as notificações de um artigo"""
     await enviar_notificacao_novo_artigo(article_id, db)
     return {"message": "Notificações enviadas com sucesso"}
+
+@app.post("/admin/test-email")
+async def test_email(email_data: dict):
+    """Endpoint para testar configuração de email"""
+    try:
+        to_email = email_data.get("to_email", "test@example.com")
+        author_name = email_data.get("author_name", "Teste Autor")
+        article_title = email_data.get("article_title", "Artigo de Teste")
+        event_name = email_data.get("event_name", "Evento de Teste")
+        
+        success = await send_notification_email(to_email, author_name, article_title, event_name)
+        
+        return {
+            "success": success,
+            "message": "Email de teste enviado com sucesso!" if success else "Falha ao enviar email de teste",
+            "email_config": {
+                "smtp_server": EMAIL_CONFIG["SMTP_SERVER"],
+                "smtp_port": EMAIL_CONFIG["SMTP_PORT"],
+                "email_from": EMAIL_CONFIG["EMAIL_FROM"],
+                "configured": EMAIL_CONFIG["EMAIL_PASSWORD"] != "your_app_password"
+            }
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Erro ao testar email: {str(e)}",
+            "email_config": {
+                "smtp_server": EMAIL_CONFIG["SMTP_SERVER"],
+                "smtp_port": EMAIL_CONFIG["SMTP_PORT"],
+                "email_from": EMAIL_CONFIG["EMAIL_FROM"],
+                "configured": EMAIL_CONFIG["EMAIL_PASSWORD"] != "your_app_password"
+            }
+        }
+
+@app.post("/admin/setup-test-user")
+async def setup_test_user(user_data: dict, db: Session = Depends(get_db)):
+    """Configura um usuário de teste para demonstração de email"""
+    try:
+        nome = user_data.get("nome", "Rafael")
+        sobrenome = user_data.get("sobrenome", "Paniago")
+        email = user_data.get("email", "rafaelpaniago@example.com")
+        
+        # Criar ou atualizar usuário
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            # Criar novo usuário
+            import bcrypt
+            senha_hash = bcrypt.hashpw("123456".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            
+            user = User(
+                nome=nome,
+                email=email,
+                senha_hash=senha_hash,
+                perfil="autor",
+                receive_notifications=1
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        
+        # Criar ou encontrar autor correspondente
+        author = db.query(Author).filter(
+            Author.nome == nome, 
+            Author.sobrenome == sobrenome
+        ).first()
+        
+        if not author:
+            # Criar autor
+            slug = f"{nome.lower()}-{sobrenome.lower()}"
+            author = Author(
+                nome=nome,
+                sobrenome=sobrenome,
+                slug=slug
+            )
+            db.add(author)
+            db.commit()
+            db.refresh(author)
+        
+        return {
+            "success": True,
+            "user": {
+                "id": user.id,
+                "nome": user.nome,
+                "email": user.email,
+                "notificacoes": user.receive_notifications
+            },
+            "author": {
+                "id": author.id,
+                "nome": author.nome,
+                "sobrenome": author.sobrenome,
+                "slug": author.slug
+            },
+            "message": "Usuário e autor de teste configurados com sucesso!"
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Erro ao configurar usuário de teste: {str(e)}"
+        }
+
+@app.get("/admin/email-logs")
+async def get_email_logs(db: Session = Depends(get_db)):
+    """Consulta os logs de emails enviados"""
+    try:
+        logs = db.query(EmailLog).order_by(EmailLog.sent_at.desc()).limit(10).all()
+        
+        result = []
+        for log in logs:
+            # Buscar informações do usuário e artigo
+            user = db.query(User).filter(User.id == log.user_id).first()
+            article = db.query(Article).filter(Article.id == log.article_id).first()
+            
+            result.append({
+                "id": log.id,
+                "user_id": log.user_id,
+                "user_email": user.email if user else "N/A",
+                "user_name": user.nome if user else "N/A",
+                "article_id": log.article_id,
+                "article_title": article.titulo if article else "N/A",
+                "email_subject": log.email_subject,
+                "sent_at": str(log.sent_at) if log.sent_at else None,
+                "status": log.status
+            })
+        
+        return {
+            "total_logs": len(result),
+            "logs": result
+        }
+        
+    except Exception as e:
+        return {
+            "error": f"Erro ao consultar logs: {str(e)}"
+        }
 
 Base.metadata.create_all(bind=engine)
