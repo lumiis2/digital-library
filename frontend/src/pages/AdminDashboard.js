@@ -6,6 +6,7 @@ const AdminArticlesPage = () => {
   const { user, isAdmin } = useAuth();
   const [articles, setArticles] = useState([]);
   const [events, setEvents] = useState([]);
+  const [editions, setEditions] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,6 +31,12 @@ const AdminArticlesPage = () => {
             : data
         );
       })
+      .catch((err) => console.error(err));
+
+    // Buscar edições
+    fetch("http://localhost:8000/edicoes")
+      .then((res) => res.json())
+      .then((data) => setEditions(data))
       .catch((err) => console.error(err));
   }, [user, isAdmin, navigate]);
 
@@ -76,6 +83,30 @@ const AdminArticlesPage = () => {
       // Remove o evento do estado
       setEvents((prev) => prev.filter((e) => e.id !== id));
       alert("Evento excluído com sucesso!");
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // Função para excluir edição
+  const handleDeleteEdition = async (id) => {
+    const confirmar = window.confirm(
+      "Tem certeza que deseja excluir esta edição?"
+    );
+    if (!confirmar) return;
+
+    try {
+      const res = await fetch(`http://localhost:8000/edicoes/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        throw new Error("Erro ao excluir edição");
+      }
+
+      // Remove a edição do estado
+      setEditions((prev) => prev.filter((e) => e.id !== id));
+      alert("Edição excluída com sucesso!");
     } catch (err) {
       alert(err.message);
     }
@@ -176,6 +207,63 @@ const AdminArticlesPage = () => {
                     {/* Botão de excluir evento */}
                     <button
                       onClick={() => handleDeleteEvent(event.id)}
+                      className="px-4 py-1 bg-red-600 text-white rounded shadow hover:bg-red-700 transition text-sm"
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Seção de Edições */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-3xl font-bold text-floresta">
+              Gerenciar Edições
+            </h2>
+            <button
+              onClick={() => navigate("/admin/edicoes/new")}
+              className="px-5 py-2 bg-douradoSol text-papel rounded-lg shadow hover:bg-douradoSol/90 font-semibold transition"
+            >
+              + Cadastrar Edição
+            </button>
+          </div>
+
+          {editions.length === 0 ? (
+            <div className="bg-white p-8 rounded-lg shadow text-center border border-gray-200">
+              <p className="text-gray-600">Nenhuma edição cadastrada ainda.</p>
+            </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2">
+              {editions.map((edition) => (
+                <div
+                  key={edition.id}
+                  className="bg-white p-6 rounded-lg shadow border border-gray-200 hover:shadow-lg transition"
+                >
+                  <h3 className="font-bold text-lg text-floresta mb-2">
+                    Edição {edition.ano}
+                  </h3>
+                  <p className="text-sm text-gray-700 mb-2">
+                    <span className="font-semibold">Evento:</span> {
+                      events.find(e => e.id === edition.evento_id)?.nome || `ID ${edition.evento_id}`
+                    }
+                  </p>
+
+                  <div className="flex space-x-2">
+                    {/* Botão de editar edição */}
+                    <button
+                      onClick={() => navigate(`/admin/edicoes/${edition.id}/edit`)}
+                      className="px-4 py-1 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition text-sm"
+                    >
+                      Editar
+                    </button>
+
+                    {/* Botão de excluir edição */}
+                    <button
+                      onClick={() => handleDeleteEdition(edition.id)}
                       className="px-4 py-1 bg-red-600 text-white rounded shadow hover:bg-red-700 transition text-sm"
                     >
                       Excluir
