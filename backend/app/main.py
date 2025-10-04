@@ -990,15 +990,16 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         existing_user = db.query(User).filter(User.email == str(user.email)).first()
         if existing_user:
             raise HTTPException(status_code=409, detail="E-mail já cadastrado")
-        
+
         hashed = sha256(user.senha_hash)
-        perfil = "admin" if str(user.email) in ADMIN_EMAILS else "usuario"
+        # Usa o perfil enviado pelo frontend, se for 'admin' ou 'usuario'
+        perfil = user.perfil if hasattr(user, 'perfil') and user.perfil in ["admin", "usuario"] else "usuario"
         new_user = User(nome=user.nome, email=str(user.email), senha_hash=hashed, perfil=perfil)
-        
+
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
-        
+
         return {"message": "Usuário registrado com sucesso", "user": {
             "id": new_user.id,
             "nome": new_user.nome,

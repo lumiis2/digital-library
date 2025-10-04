@@ -12,6 +12,13 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+
+  // Debug: loga o perfil do usuário sempre que user mudar
+  useEffect(() => {
+    if (user) {
+      console.log('[AuthContext] user.perfil:', user.perfil, user);
+    }
+  }, [user]);
   const [loading, setLoading] = useState(true);
 
   // Recupera usuário ao carregar a aplicação
