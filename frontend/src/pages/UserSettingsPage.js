@@ -5,24 +5,65 @@ import NotificationSettings from '../components/common/NotificationSettings';
 function UserSettingsPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Em uma aplicação real, você obteria o ID do usuário do contexto de autenticação
-    // Por enquanto, vamos simular com um usuário fixo
-    const userData = {
-      id: 1,
-      nome: "Usuário Exemplo",
-      email: "usuario@exemplo.com"
+    const fetchUserData = async () => {
+      try {
+        // Obter token do localStorage
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+          setError("Usuário não está logado");
+          setLoading(false);
+          return;
+        }
+
+        // Fazer requisição para obter dados do usuário atual
+        const response = await fetch('http://localhost:8000/api/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Erro ao carregar dados do usuário');
+        }
+
+        const userData = await response.json();
+        setUser(userData);
+      } catch (error) {
+        console.error('Erro ao carregar usuário:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
     };
-    
-    setUser(userData);
-    setLoading(false);
+
+    fetchUserData();
   }, []);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <h3 className="text-red-800 font-medium">Erro ao carregar perfil</h3>
+          <p className="text-red-600 mt-2">{error}</p>
+          <Link 
+            to="/login" 
+            className="mt-4 inline-block px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Fazer Login
+          </Link>
+        </div>
       </div>
     );
   }
@@ -65,6 +106,20 @@ function UserSettingsPage() {
               </label>
               <p className="text-sm text-gray-900">{user?.email}</p>
             </div>
+            {user?.perfil && (
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tipo de Usuário
+                </label>
+                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                  user.perfil === 'admin' 
+                    ? 'bg-purple-100 text-purple-800' 
+                    : 'bg-green-100 text-green-800'
+                }`}>
+                  {user.perfil === 'admin' ? 'Administrador' : 'Usuário'}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
