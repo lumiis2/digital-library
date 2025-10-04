@@ -236,6 +236,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+import time
+
+@app.middleware("http")
+async def log_requests(request, call_next):
+    start_time = time.time()
+    print(f"🚀 REQUISIÇÃO INICIADA: {request.method} {request.url}")
+    
+    response = await call_next(request)
+    
+    process_time = time.time() - start_time
+    print(f"⏱️ REQUISIÇÃO FINALIZADA: {request.method} {request.url} - {process_time:.2f}s")
+    
+    if process_time > 1:  # Log requisições que demoram mais de 1 segundo
+        print(f"🐌 REQUISIÇÃO LENTA: {request.method} {request.url} - {process_time:.2f}s")
+    
+    response.headers["X-Process-Time"] = str(process_time)
+    return response
+
 # Criar tabelas no banco de dados
 Base.metadata.create_all(bind=engine)
 
@@ -276,7 +294,24 @@ def criar_evento(evento: EventoCreate, db: Session = Depends(get_db)):
 
 @app.get("/eventos", response_model=list[EventoRead])
 def listar_eventos(db: Session = Depends(get_db)):
-    return db.query(Event).all()
+    print(f"🔍 DEBUG - Iniciando listagem de eventos")
+    
+    try:
+        print(f"🔍 DEBUG - Executando query de eventos...")
+        eventos = db.query(Event).all()
+        print(f"🔍 DEBUG - Encontrados {len(eventos)} eventos no banco")
+        
+        for i, evento in enumerate(eventos):
+            print(f"🔍 DEBUG - Evento {i+1}: ID={evento.id}, Nome={evento.nome}, Slug={evento.slug}")
+        
+        print(f"🔍 DEBUG - Retornando {len(eventos)} eventos")
+        return eventos
+        
+    except Exception as e:
+        print(f"❌ ERRO CRÍTICO ao listar eventos: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 @app.get("/eventos/by-id/{evento_id}", response_model=EventoRead)
 def obter_evento_por_id(evento_id: int, db: Session = Depends(get_db)):
@@ -497,34 +532,61 @@ async def criar_artigo(artigo: ArticleCreate, db: Session = Depends(get_db)):
 
 @app.get("/artigos", response_model=list[ArticleRead])
 def listar_artigos(autor_id: int | None = None, db: Session = Depends(get_db)):
-    query = db.query(Article)
-    if autor_id:
-        query = query.join(Article.authors).filter(Author.id == autor_id)
-    artigos = query.all()
+    print(f"🔍 DEBUG - Iniciando listagem de artigos, autor_id: {autor_id}")
     
-    # Criar resposta manual para evitar problemas de serialização
-    result = []
-    for artigo in artigos:
-        authors_list = []
-        for author in artigo.authors:
-            authors_list.append({
-                "id": author.id,
-                "nome": author.nome,
-                "sobrenome": author.sobrenome,
-                "slug": author.slug
-            })
+    try:
+        query = db.query(Article)
+        if autor_id:
+            query = query.join(Article.authors).filter(Author.id == autor_id)
         
-        result.append({
-            "id": artigo.id,
-            "titulo": artigo.titulo,
-            "pdf_path": artigo.pdf_path,
-            "area": artigo.area,
-            "palavras_chave": artigo.palavras_chave,
-            "edicao_id": artigo.edicao_id,
-            "authors": authors_list
-        })
-    
-    return result
+        print(f"🔍 DEBUG - Executando query...")
+        artigos = query.all()
+        print(f"🔍 DEBUG - Encontrados {len(artigos)} artigos no banco")
+        
+        # Criar resposta manual para evitar problemas de serialização
+        result = []
+        for i, artigo in enumerate(artigos):
+            print(f"🔍 DEBUG - Processando artigo {i+1}: ID={artigo.id}, Título={artigo.titulo}")
+            
+            try:
+                authors_list = []
+                print(f"🔍 DEBUG - Carregando autores do artigo {artigo.id}...")
+                for j, author in enumerate(artigo.authors):
+                    print(f"🔍 DEBUG - Autor {j+1}: {author.nome} {author.sobrenome}")
+                    authors_list.append({
+                        "id": author.id,
+                        "nome": author.nome,
+                        "sobrenome": author.sobrenome,
+                        "slug": author.slug
+                    })
+                
+                article_data = {
+                    "id": artigo.id,
+                    "titulo": artigo.titulo,
+                    "resumo": artigo.resumo,
+                    "area": artigo.area,
+                    "palavras_chave": artigo.palavras_chave,
+                    "pdf_path": artigo.pdf_path,
+                    "data_publicacao": str(artigo.data_publicacao) if artigo.data_publicacao else None,
+                    "edicao_id": artigo.edicao_id,
+                    "authors": authors_list
+                }
+                
+                result.append(article_data)
+                print(f"✅ DEBUG - Artigo {i+1} processado com sucesso")
+                
+            except Exception as e:
+                print(f"❌ DEBUG - Erro ao processar artigo {artigo.id}: {e}")
+                continue
+        
+        print(f"🔍 DEBUG - Retornando {len(result)} artigos processados")
+        return result
+        
+    except Exception as e:
+        print(f"❌ ERRO CRÍTICO ao listar artigos: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 @app.get("/artigos/{artigo_id}", response_model=ArticleRead)
 def obter_artigo(artigo_id: int, db: Session = Depends(get_db)):
