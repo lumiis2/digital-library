@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookIcon, UserIcon, FolderIcon, CalendarIcon } from './Icons';
+import { BookIcon, UserIcon, CalendarIcon } from './Icons';
 import { useAuth } from './AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -30,9 +30,14 @@ const Navigation = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate('/')}>
+          <div
+            className="flex items-center space-x-2 cursor-pointer"
+            onClick={() => navigate('/')}
+          >
             <BookIcon className="w-8 h-8 text-floresta" />
-            <h1 className="text-2xl font-bold text-floresta select-none">Digital Library</h1>
+            <h1 className="text-2xl font-bold text-floresta select-none">
+              Digital Library
+            </h1>
           </div>
 
           {/* Navigation Items */}
@@ -77,7 +82,7 @@ const Navigation = () => {
                     d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                   ></path>
                 </svg>
-                <span>Admin</span>
+                <span>Painel Admin</span>
               </button>
             )}
           </div>
@@ -106,7 +111,9 @@ const Navigation = () => {
                   className="flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-floresta hover:bg-floresta hover:text-papel transition-colors border border-madeira shadow-sm"
                 >
                   <div className="w-8 h-8 bg-musgo rounded-full flex items-center justify-center select-none">
-                    <span className="text-papel font-bold">{user.nome.charAt(0).toUpperCase()}</span>
+                    <span className="text-papel font-bold">
+                      {user.nome.charAt(0).toUpperCase()}
+                    </span>
                   </div>
                   <span className="hidden sm:inline">{user.nome}</span>
                   {isAdmin() && (
@@ -121,22 +128,32 @@ const Navigation = () => {
                     viewBox="0 0 24 24"
                     xmlns="http://www.w3.org/2000/svg"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
                   </svg>
                 </button>
 
                 {isUserMenuOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-papel rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-50 border border-madeira">
                     <div className="py-1">
-                      <button
-                        onClick={() => {
-                          navigate('/dashboard');
-                          setIsUserMenuOpen(false);
-                        }}
-                        className="block w-full text-left px-4 py-2 text-floresta hover:bg-floresta hover:text-papel rounded transition-colors"
-                      >
-                        Dashboard
-                      </button>
+                      {/* Dashboard só para admin */}
+                      {isAdmin() && (
+                        <button
+                          onClick={() => {
+                            navigate('/dashboard');
+                            setIsUserMenuOpen(false);
+                          }}
+                          className="block w-full text-left px-4 py-2 text-floresta hover:bg-floresta hover:text-papel rounded transition-colors"
+                        >
+                          Dashboard
+                        </button>
+                      )}
+
+                      {/* Perfil sempre visível */}
                       <button
                         onClick={() => {
                           navigate('/configuracoes');
@@ -146,34 +163,28 @@ const Navigation = () => {
                       >
                         Perfil
                       </button>
-                      <button
-                        onClick={() => {
-                          if (isAdmin()) {
-                            navigate('/admin/articles');
-                          } else {
-                            navigate('/my-articles'); // Ajuste conforme a rota correta para usuários não admin
-                          }
-                          setIsUserMenuOpen(false);
-                        }}
-                        className="block w-full text-left px-4 py-2 text-floresta hover:bg-floresta hover:text-papel rounded transition-colors"
-                      >
-                        Cadastrar Artigos
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (isAdmin()) {
-                            navigate('/admin/events');
-                          } else {
-                            navigate('/events');
-                          }
-                          setIsUserMenuOpen(false);
-                        }}
-                        className="block w-full text-left px-4 py-2 text-floresta hover:bg-floresta hover:text-papel rounded transition-colors"
-                      >
-                        Cadastrar Eventos
-                      </button>
+
                       {isAdmin() && (
                         <>
+                          <button
+                            onClick={() => {
+                              navigate('/admin/articles/new');
+                              setIsUserMenuOpen(false);
+                            }}
+                            className="block w-full text-left px-4 py-2 text-floresta hover:bg-floresta hover:text-papel rounded transition-colors"
+                          >
+                            Cadastrar Artigos
+                          </button>
+                          <button
+                            onClick={() => {
+                              navigate('/admin/events/new');
+                              setIsUserMenuOpen(false);
+                            }}
+                            className="block w-full text-left px-4 py-2 text-floresta hover:bg-floresta hover:text-papel rounded transition-colors"
+                          >
+                            Cadastrar Eventos
+                          </button>
+
                           <div className="border-t border-madeira"></div>
                           <button
                             onClick={() => {
@@ -186,6 +197,7 @@ const Navigation = () => {
                           </button>
                         </>
                       )}
+
                       <div className="border-t border-madeira"></div>
                       <button
                         onClick={handleLogout}
@@ -210,7 +222,12 @@ const Navigation = () => {
                 viewBox="0 0 24 24"
                 xmlns="http://www.w3.org/2000/svg"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               </svg>
             </button>
           </div>
@@ -218,9 +235,15 @@ const Navigation = () => {
       </div>
 
       {/* Click outside to close dropdown */}
-      {isUserMenuOpen && <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)} />}
+      {isUserMenuOpen && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setIsUserMenuOpen(false)}
+        />
+      )}
     </nav>
   );
 };
 
 export default Navigation;
+
