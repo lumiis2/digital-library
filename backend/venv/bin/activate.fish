@@ -33,7 +33,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV /home/blms_novo/digital-library/backend/venv
+set -gx VIRTUAL_ENV '/home/blms_novo/ufmg/202502/engenharia de software/digital-library/backend/venv'
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/"bin $PATH

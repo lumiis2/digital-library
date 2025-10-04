@@ -17,7 +17,6 @@ from typing import List
 from datetime import date
 import bibtexparser
 
-
 # Configurações de email
 EMAIL_CONFIG = {
     "SMTP_SERVER": "smtp.gmail.com",  # Configure conforme seu provedor

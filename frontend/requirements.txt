@@ -6,8 +6,7 @@ npm
 
 # React
 react
-eact-router-dom
-
+react-router-dom
 
 # Tailwind CSS
 tailwindcss
