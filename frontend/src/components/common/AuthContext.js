@@ -16,13 +16,13 @@ export const AuthProvider = ({ children }) => {
 
   // Recupera usuário ao carregar a aplicação
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('authToken');  // MUDANÇA: 'authToken'
     const userData = localStorage.getItem('user');
     if (token && userData) {
       try {
         setUser(JSON.parse(userData));
       } catch {
-        localStorage.removeItem('token');
+        localStorage.removeItem('authToken');  // MUDANÇA: 'authToken'
         localStorage.removeItem('user');
       }
     }
@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       setUser(data.user);
-      localStorage.setItem('token', data.token);
+      localStorage.setItem('authToken', data.token);  // MUDANÇA: 'authToken'
       localStorage.setItem('user', JSON.stringify(data.user));
 
       return { success: true };
@@ -77,7 +77,7 @@ export const AuthProvider = ({ children }) => {
 
   // 🔹 Logout
   const logout = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');  // MUDANÇA: 'authToken'
     localStorage.removeItem('user');
     setUser(null);
   };

@@ -1,32 +1,71 @@
-from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File
+# =====================================================================
+# IMPORTS
+# =====================================================================
+from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Form, Header
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy.orm import Session
-from .database import Base, engine, SessionLocal
-from .models import Event, Edition, Article, Author, artigo_autor, User, Notification, EmailLog
-from .schemas import EventoCreate, EventoRead, EventoUpdate, EditionCreate, EditionRead, AuthorCreate, AuthorRead, ArticleCreate, ArticleRead, UserCreate, UserRead, LoginRequest, NotificationCreate, NotificationRead, NotificationSettings
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-import hashlib
-import smtplib
-from email.mime.text import MIMEText
-import os
-import shutil
-from email.mime.multipart import MIMEMultipart
-import asyncio
 from typing import List
 from datetime import date
+import hashlib
+import smtplib
+import zipfile
+import tempfile
+import os
+import shutil
+import asyncio
 import bibtexparser
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+
+# Local imports
+from .database import Base, engine, SessionLocal
+from .models import Event, Edition, Article, Author, artigo_autor, User, Notification, EmailLog
+from .schemas import (
+    EventoCreate, EventoRead, EventoUpdate, 
+    EditionCreate, EditionRead, 
+    AuthorCreate, AuthorRead, 
+    ArticleCreate, ArticleRead, 
+    UserCreate, UserRead, LoginRequest, 
+    NotificationCreate, NotificationRead, NotificationSettings
+)
+
+# =====================================================================
+# CONFIGURAÇÕES
+# =====================================================================
 
 # Configurações de email
 EMAIL_CONFIG = {
-    "SMTP_SERVER": "smtp.gmail.com",  # Configure conforme seu provedor
+    "SMTP_SERVER": "smtp.gmail.com",
     "SMTP_PORT": 587,
-    "EMAIL_FROM": "digitallibrary.test@gmail.com",  # Email de teste
-    "EMAIL_PASSWORD": "test_password_123",  # Senha temporária para teste
+    "EMAIL_FROM": "digitallibrary.test@gmail.com",
+    "EMAIL_PASSWORD": "test_password_123",
 }
 
-# Função para enviar email
+# Configurações de autenticação
+SECRET_KEY = "your-secret-key"
+ADMIN_EMAILS = {"luisalcarvalhaes@gmail.com", "outroadmin@email.com"}
+
+# =====================================================================
+# FUNÇÕES UTILITÁRIAS
+# =====================================================================
+
+def sha256(s: str) -> str:
+    return hashlib.sha256(s.encode("utf-8")).hexdigest()
+
+def get_db():
+    """Dependência de sessão do banco de dados"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 async def send_notification_email(to_email: str, author_name: str, article_title: str, event_name: str):
+    """Função para enviar email de notificação"""
     try:
         msg = MIMEMultipart()
         msg['From'] = EMAIL_CONFIG["EMAIL_FROM"]
@@ -66,13 +105,129 @@ async def send_notification_email(to_email: str, author_name: str, article_title
         print(f"Erro ao enviar email: {str(e)}")
         return False
 
-app = FastAPI()
+async def enviar_notificacao_novo_artigo(article_id: int, db: Session):
+    """Envia notificação por email quando um novo artigo é publicado"""
+    try:
+        # Buscar o artigo
+        article = db.query(Article).filter(Article.id == article_id).first()
+        if not article:
+            return
+        
+        # Buscar autores do artigo
+        for author in article.authors:
+            # 1. Verificar se o próprio autor é um usuário cadastrado
+            user_author = db.query(User).filter(
+                (User.nome.ilike(f"%{author.nome}%")) & 
+                (User.receive_notifications == 1)
+            ).first()
+            
+            if user_author:
+                # Verificar se já enviou email para este artigo/usuário
+                email_sent = db.query(EmailLog).filter(
+                    (EmailLog.user_id == user_author.id) & (EmailLog.article_id == article.id)
+                ).first()
+                
+                if not email_sent:
+                    # Enviar email para o próprio autor
+                    try:
+                        await send_notification_email(
+                            str(user_author.email), 
+                            f"{str(author.nome)} {str(author.sobrenome)}", 
+                            str(article.titulo), 
+                            str(article.edition.event.nome) if article.edition and article.edition.event else "Evento"
+                        )
+                        
+                        # Registrar envio
+                        log = EmailLog(
+                            user_id=user_author.id,
+                            article_id=article.id,
+                            author_id=author.id,
+                            sent_at=date.today(),
+                            email_subject=f"Novo artigo: {str(article.titulo)}",
+                            status="sent"
+                        )
+                        db.add(log)
+                        
+                    except Exception as e:
+                        # Registrar falha
+                        log = EmailLog(
+                            user_id=user_author.id,
+                            article_id=article.id,
+                            author_id=author.id,
+                            sent_at=date.today(),
+                            email_subject=f"Novo artigo: {str(article.titulo)}",
+                            status="failed"
+                        )
+                        db.add(log)
+                        print(f"Erro ao enviar email para {str(user_author.email)}: {e}")
+            
+            # 2. Buscar usuários que seguem este autor
+            notifications = db.query(Notification).filter(
+                (Notification.author_id == author.id) & (Notification.is_active == 1)
+            ).all()
+            
+            for notification in notifications:
+                user = db.query(User).filter(
+                    (User.id == notification.user_id) & (User.receive_notifications == 1)
+                ).first()
+                
+                if user:
+                    # Verificar se já enviou email para este artigo/usuário
+                    email_sent = db.query(EmailLog).filter(
+                        (EmailLog.user_id == user.id) & (EmailLog.article_id == article.id)
+                    ).first()
+                    
+                    if not email_sent:
+                        # Enviar email
+                        try:
+                            await send_notification_email(
+                                str(user.email), 
+                                f"{str(author.nome)} {str(author.sobrenome)}", 
+                                str(article.titulo), 
+                                str(article.edition.event.nome) if article.edition and article.edition.event else "Evento"
+                            )
+                            
+                            # Registrar envio
+                            log = EmailLog(
+                                user_id=user.id,
+                                article_id=article.id,
+                                author_id=author.id,
+                                sent_at=date.today(),
+                                email_subject=f"Novo artigo: {str(article.titulo)}",
+                                status="sent"
+                            )
+                            db.add(log)
+                            
+                        except Exception as e:
+                            # Registrar falha
+                            log = EmailLog(
+                                user_id=user.id,
+                                article_id=article.id,
+                                author_id=author.id,
+                                sent_at=date.today(),
+                                email_subject=f"Novo artigo: {str(article.titulo)}",
+                                status="failed"
+                            )
+                            db.add(log)
+                            print(f"Erro ao enviar email para {str(user.email)}: {e}")
+        
+        db.commit()
+        
+    except Exception as e:
+        print(f"Erro no sistema de notificação: {e}")
 
-# Criar diretório uploads se não existir e servir arquivos estáticos (PDFs)
+# =====================================================================
+# CONFIGURAÇÃO DA APLICAÇÃO
+# =====================================================================
+
+app = FastAPI(title="Digital Library API")
+
+# Criar diretório uploads e servir arquivos estáticos
 uploads_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")
 os.makedirs(uploads_dir, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
+# Configurar CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -81,42 +236,57 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from fastapi.responses import JSONResponse
+import time
+
+@app.middleware("http")
+async def log_requests(request, call_next):
+    start_time = time.time()
+    print(f"🚀 REQUISIÇÃO INICIADA: {request.method} {request.url}")
+    
+    response = await call_next(request)
+    
+    process_time = time.time() - start_time
+    print(f"⏱️ REQUISIÇÃO FINALIZADA: {request.method} {request.url} - {process_time:.2f}s")
+    
+    if process_time > 1:  # Log requisições que demoram mais de 1 segundo
+        print(f"🐌 REQUISIÇÃO LENTA: {request.method} {request.url} - {process_time:.2f}s")
+    
+    response.headers["X-Process-Time"] = str(process_time)
+    return response
+
+# Criar tabelas no banco de dados
+Base.metadata.create_all(bind=engine)
+
+# =====================================================================
+# ENDPOINTS BÁSICOS
+# =====================================================================
+
+@app.get("/")
+def read_root():
+    return {"message": "API Digital Library está funcionando!"}
 
 @app.options("/{rest_of_path:path}")
 async def preflight_handler(rest_of_path: str = ""):
     return JSONResponse(content={"message": "OK"})
 
+# =====================================================================
+# ENDPOINTS DE EVENTOS
+# =====================================================================
 
-# Dependência de sessão
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-# ----------------------
-# Root
-# ----------------------
-@app.get("/")
-def read_root():
-    return {"message": "API Digital Library está funcionando!"}
-
-# ----------------------
-# Eventos
-# ----------------------
 @app.post("/eventos", response_model=EventoRead)
 def criar_evento(evento: EventoCreate, db: Session = Depends(get_db)):
-    evento_existente = db.query(Event).filter(
-        Event.slug == evento.sigla).first()
+    evento_existente = db.query(Event).filter(Event.slug == evento.sigla).first()
     if evento_existente:
         raise HTTPException(
-            status_code = 400,
+            status_code=400,
             detail="Já existe um evento com essa sigla registrado no banco de dados"
         )
-    novo_evento = Event(nome=evento.nome, slug=evento.sigla, admin_id=evento.admin_id)
+    # USAR admin_id do payload:
+    novo_evento = Event(
+        nome=evento.nome, 
+        slug=evento.sigla,
+        admin_id=evento.admin_id  # MANTER admin_id
+    )
     db.add(novo_evento)
     db.commit()
     db.refresh(novo_evento)
@@ -124,7 +294,24 @@ def criar_evento(evento: EventoCreate, db: Session = Depends(get_db)):
 
 @app.get("/eventos", response_model=list[EventoRead])
 def listar_eventos(db: Session = Depends(get_db)):
-    return db.query(Event).all()
+    print(f"🔍 DEBUG - Iniciando listagem de eventos")
+    
+    try:
+        print(f"🔍 DEBUG - Executando query de eventos...")
+        eventos = db.query(Event).all()
+        print(f"🔍 DEBUG - Encontrados {len(eventos)} eventos no banco")
+        
+        for i, evento in enumerate(eventos):
+            print(f"🔍 DEBUG - Evento {i+1}: ID={evento.id}, Nome={evento.nome}, Slug={evento.slug}")
+        
+        print(f"🔍 DEBUG - Retornando {len(eventos)} eventos")
+        return eventos
+        
+    except Exception as e:
+        print(f"❌ ERRO CRÍTICO ao listar eventos: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 @app.get("/eventos/by-id/{evento_id}", response_model=EventoRead)
 def obter_evento_por_id(evento_id: int, db: Session = Depends(get_db)):
@@ -140,14 +327,12 @@ def obter_evento_por_slug(slug: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Evento não encontrado")
     return evento
 
-# Editar evento por ID
 @app.put("/eventos/{evento_id}", response_model=EventoRead)
 def atualizar_evento(evento_id: int, evento: EventoUpdate, db: Session = Depends(get_db)):
     evento_db = db.query(Event).filter(Event.id == evento_id).first()
     if not evento_db:
         raise HTTPException(status_code=404, detail="Evento não encontrado")
     
-    # Atualizar campos se fornecidos
     if evento.nome is not None:
         setattr(evento_db, 'nome', evento.nome)
     if evento.admin_id is not None:
@@ -157,7 +342,6 @@ def atualizar_evento(evento_id: int, evento: EventoUpdate, db: Session = Depends
     db.refresh(evento_db)
     return evento_db
 
-# Deletar evento por ID
 @app.delete("/eventos/{evento_id}")
 def deletar_evento(evento_id: int, db: Session = Depends(get_db)):
     evento_db = db.query(Event).filter(Event.id == evento_id).first()
@@ -168,7 +352,10 @@ def deletar_evento(evento_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Evento deletado com sucesso"}
 
-# Criar edição
+# =====================================================================
+# ENDPOINTS DE EDIÇÕES
+# =====================================================================
+
 @app.post("/edicoes", response_model=EditionRead)
 def criar_edicao(edicao: EditionCreate, db: Session = Depends(get_db)):
     # Verificar se o evento existe
@@ -184,7 +371,7 @@ def criar_edicao(edicao: EditionCreate, db: Session = Depends(get_db)):
     if edicao_existente:
         raise HTTPException(status_code=400, detail="Já existe uma edição para este evento no ano especificado")
     
-    # Gerar slug para a edição (evento_slug + ano)
+    # Gerar slug para a edição
     slug = f"{evento.slug}-{edicao.ano}"
     
     edicao_db = Edition(ano=edicao.ano, evento_id=edicao.evento_id, slug=slug)
@@ -193,7 +380,10 @@ def criar_edicao(edicao: EditionCreate, db: Session = Depends(get_db)):
     db.refresh(edicao_db)
     return edicao_db
 
-# Atualizar edição
+@app.get("/edicoes", response_model=list[EditionRead])
+def listar_edicoes(db: Session = Depends(get_db)):
+    return db.query(Edition).all()
+
 @app.put("/edicoes/{edicao_id}", response_model=EditionRead)
 def atualizar_edicao(edicao_id: int, edicao: EditionCreate, db: Session = Depends(get_db)):
     edicao_db = db.query(Edition).filter(Edition.id == edicao_id).first()
@@ -206,7 +396,6 @@ def atualizar_edicao(edicao_id: int, edicao: EditionCreate, db: Session = Depend
     db.refresh(edicao_db)
     return edicao_db
 
-# Deletar edição
 @app.delete("/edicoes/{edicao_id}")
 def deletar_edicao(edicao_id: int, db: Session = Depends(get_db)):
     edicao_db = db.query(Edition).filter(Edition.id == edicao_id).first()
@@ -216,10 +405,6 @@ def deletar_edicao(edicao_id: int, db: Session = Depends(get_db)):
     db.delete(edicao_db)
     db.commit()
     return {"message": "Edição deletada com sucesso"}
-
-@app.get("/edicoes", response_model=list[EditionRead])
-def listar_edicoes(db: Session = Depends(get_db)):
-    return db.query(Edition).all()
 
 @app.get("/eventos/{evento_slug}/edicoes")
 def listar_edicoes_do_evento(evento_slug: str, db: Session = Depends(get_db)):
@@ -249,12 +434,15 @@ def listar_artigos_da_edicao(evento_slug: str, ano: int, db: Session = Depends(g
         raise HTTPException(status_code=404, detail="Edição não encontrada")
     return db.query(Article).filter(Article.edicao_id == edicao.id).all()
 
-# ----------------------
-# Autores
-# ----------------------
+# =====================================================================
+# ENDPOINTS DE AUTORES
+# =====================================================================
+
 @app.post("/autores", response_model=AuthorRead)
 def criar_autor(autor: AuthorCreate, db: Session = Depends(get_db)):
-    autor_existente = db.query(Author).filter((Author.nome == autor.nome) & (Author.sobrenome == autor.sobrenome)).first()
+    autor_existente = db.query(Author).filter(
+        (Author.nome == autor.nome) & (Author.sobrenome == autor.sobrenome)
+    ).first()
     if autor_existente:
         raise HTTPException(
             status_code=400,
@@ -313,9 +501,10 @@ def listar_artigos_do_autor(slug: str, db: Session = Depends(get_db)):
         "total_artigos": len(artigos)
     }
 
-# ----------------------
-# Artigos
-# ----------------------
+# =====================================================================
+# ENDPOINTS DE ARTIGOS
+# =====================================================================
+
 @app.post("/artigos", response_model=ArticleRead)
 async def criar_artigo(artigo: ArticleCreate, db: Session = Depends(get_db)):
     novo_artigo = Article(
@@ -336,14 +525,75 @@ async def criar_artigo(artigo: ArticleCreate, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(novo_artigo)
         
-        # Buscar informações da edição e evento para o email
-        edicao = db.query(Edition).filter(Edition.id == artigo.edicao_id).first()
-        evento_nome = edicao.event.nome if edicao and edicao.event else "Evento não identificado"
-        
         # Enviar notificações automaticamente após criar o artigo
         await enviar_notificacao_novo_artigo(novo_artigo.id, db)
 
     return novo_artigo
+
+@app.get("/artigos", response_model=list[ArticleRead])
+def listar_artigos(autor_id: int | None = None, db: Session = Depends(get_db)):
+    print(f"🔍 DEBUG - Iniciando listagem de artigos, autor_id: {autor_id}")
+    
+    try:
+        query = db.query(Article)
+        if autor_id:
+            query = query.join(Article.authors).filter(Author.id == autor_id)
+        
+        print(f"🔍 DEBUG - Executando query...")
+        artigos = query.all()
+        print(f"🔍 DEBUG - Encontrados {len(artigos)} artigos no banco")
+        
+        # Criar resposta manual para evitar problemas de serialização
+        result = []
+        for i, artigo in enumerate(artigos):
+            print(f"🔍 DEBUG - Processando artigo {i+1}: ID={artigo.id}, Título={artigo.titulo}")
+            
+            try:
+                authors_list = []
+                print(f"🔍 DEBUG - Carregando autores do artigo {artigo.id}...")
+                for j, author in enumerate(artigo.authors):
+                    print(f"🔍 DEBUG - Autor {j+1}: {author.nome} {author.sobrenome}")
+                    authors_list.append({
+                        "id": author.id,
+                        "nome": author.nome,
+                        "sobrenome": author.sobrenome,
+                        "slug": author.slug
+                    })
+                
+                article_data = {
+                    "id": artigo.id,
+                    "titulo": artigo.titulo,
+                    "resumo": artigo.resumo,
+                    "area": artigo.area,
+                    "palavras_chave": artigo.palavras_chave,
+                    "pdf_path": artigo.pdf_path,
+                    "data_publicacao": str(artigo.data_publicacao) if artigo.data_publicacao else None,
+                    "edicao_id": artigo.edicao_id,
+                    "authors": authors_list
+                }
+                
+                result.append(article_data)
+                print(f"✅ DEBUG - Artigo {i+1} processado com sucesso")
+                
+            except Exception as e:
+                print(f"❌ DEBUG - Erro ao processar artigo {artigo.id}: {e}")
+                continue
+        
+        print(f"🔍 DEBUG - Retornando {len(result)} artigos processados")
+        return result
+        
+    except Exception as e:
+        print(f"❌ ERRO CRÍTICO ao listar artigos: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+@app.get("/artigos/{artigo_id}", response_model=ArticleRead)
+def obter_artigo(artigo_id: int, db: Session = Depends(get_db)):
+    artigo = db.query(Article).filter(Article.id == artigo_id).first()
+    if not artigo:
+        raise HTTPException(status_code=404, detail="Artigo não encontrado")
+    return artigo
 
 @app.put("/artigos/{artigo_id}", response_model=ArticleRead)
 async def atualizar_artigo(artigo_id: int, artigo: ArticleCreate, db: Session = Depends(get_db)):
@@ -369,18 +619,20 @@ async def atualizar_artigo(artigo_id: int, artigo: ArticleCreate, db: Session = 
     db.refresh(artigo_existente)
     return artigo_existente
 
-@app.get("/artigos/{artigo_id}", response_model=ArticleRead)
-def obter_artigo(artigo_id: int, db: Session = Depends(get_db)):
-    artigo = db.query(Article).filter(Article.id == artigo_id).first()
-    if not artigo:
+@app.delete("/artigos/{artigo_id}")
+def deletar_artigo(artigo_id: int, db: Session = Depends(get_db)):
+    artigo_db = db.query(Article).filter(Article.id == artigo_id).first()
+    if not artigo_db:
         raise HTTPException(status_code=404, detail="Artigo não encontrado")
-    return artigo
+    
+    db.delete(artigo_db)
+    db.commit()
+    return {"message": "Artigo deletado com sucesso"}
 
-#@app.get("/artigos", response_model=list[ArticleRead])
-#def listar_artigos(db: Session = Depends(get_db)):
-#    return db.query(Article).all()
+# =====================================================================
+# ENDPOINTS DE UPLOAD
+# =====================================================================
 
-# Upload de PDF
 @app.post("/upload-pdf")
 async def upload_pdf(file: UploadFile = File(...)):
     if not file.filename or not file.filename.endswith('.pdf'):
@@ -403,211 +655,333 @@ async def upload_pdf(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao salvar arquivo: {str(e)}")
 
-@app.get("/artigos", response_model=list[ArticleRead])
-def listar_artigos(autor_id: int | None = None, db: Session = Depends(get_db)):
-    query = db.query(Article)
-    if autor_id:
-        query = query.join(Article.authors).filter(Author.id == autor_id)
-    artigos = query.all()
-    
-    # Criar resposta manual para evitar problemas de serialização
-    result = []
-    for artigo in artigos:
-        authors_list = []
-        for author in artigo.authors:
-            authors_list.append({
-                "id": author.id,
-                "nome": author.nome,
-                "sobrenome": author.sobrenome,
-                "slug": author.slug
-            })
-        
-        result.append({
-            "id": artigo.id,
-            "titulo": artigo.titulo,
-            "pdf_path": artigo.pdf_path,
-            "area": artigo.area,
-            "palavras_chave": artigo.palavras_chave,
-            "edicao_id": artigo.edicao_id,
-            "authors": authors_list
-        })
-    
-    return result
-
-@app.delete("/artigos/{artigo_id}")
-def deletar_artigo(artigo_id: int, db: Session = Depends(get_db)):
-    artigo_db = db.query(Article).filter(Article.id == artigo_id).first()
-    if not artigo_db:
-        raise HTTPException(status_code=404, detail="Artigo não encontrado")
-    
-    db.delete(artigo_db)
-    db.commit()
-    return {"message": "Artigo deletado com sucesso"}
+# REMOVA os dois endpoints existentes e substitua por este:
 
 @app.post("/upload-bibtex")
-async def upload_bibtex(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    """
-    Endpoint para processar arquivo BibTeX e retornar artigos para preview
-    """
-    if not file.filename or not file.filename.endswith(('.bib', '.bibtex')):
-        raise HTTPException(status_code=400, detail="Apenas arquivos .bib ou .bibtex são permitidos")
-    
-    try:
-        # Ler conteúdo do arquivo
-        content = await file.read()
-        content_str = content.decode('utf-8')
-        
-        # Parsear BibTeX
-        bib_database = bibtexparser.loads(content_str)
-        
-        articles_preview = []
-        
-        for entry in bib_database.entries:
-            # Extrair informações do artigo
-            article_data = {
-                "titulo": entry.get('title', '').replace('{', '').replace('}', ''),
-                "area": entry.get('keywords', '') or entry.get('subject', ''),
-                "palavras_chave": entry.get('keywords', ''),
-                "resumo": entry.get('abstract', ''),
-                "doi": entry.get('doi', ''),
-                "categoria": entry.get('type', entry.get('ENTRYTYPE', '')),
-                "data_publicacao": entry.get('year', ''),
-                "bibtex_key": entry.get('ID', ''),
-                "authors": []
-            }
-            
-            # Processar autores
-            if 'author' in entry:
-                authors_str = entry['author']
-                # Separar autores por ' and '
-                author_names = [name.strip() for name in authors_str.split(' and ')]
-                
-                for author_name in author_names:
-                    if ',' in author_name:
-                        # Formato: "Sobrenome, Nome"
-                        parts = author_name.split(',', 1)
-                        sobrenome = parts[0].strip()
-                        nome = parts[1].strip() if len(parts) > 1 else ""
-                    else:
-                        # Formato: "Nome Sobrenome" - pegar a última palavra como sobrenome
-                        parts = author_name.strip().split()
-                        if len(parts) > 1:
-                            nome = ' '.join(parts[:-1])
-                            sobrenome = parts[-1]
-                        else:
-                            nome = parts[0] if parts else ""
-                            sobrenome = ""
-                    
-                    article_data["authors"].append({
-                        "nome": nome,
-                        "sobrenome": sobrenome
-                    })
-            
-            articles_preview.append(article_data)
-        
-        return {
-            "message": f"Arquivo processado com sucesso. Encontrados {len(articles_preview)} artigos.",
-            "articles": articles_preview,
-            "total": len(articles_preview)
-        }
-    
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao processar arquivo BibTeX: {str(e)}")
-
-@app.post("/confirm-bibtex-import")
-async def confirm_bibtex_import(
-    request_data: dict,
+async def upload_bibtex(
+    bibtex_file: UploadFile = File(...),
+    pdf_zip: UploadFile = File(None),
+    action: str = Form("preview"),
+    authorization: str = Header(None),  # MUDANÇA: Header em vez de Form
     db: Session = Depends(get_db)
 ):
     """
-    Confirmar e salvar artigos do BibTeX no banco de dados
+    Endpoint unificado para BibTeX:
+    - action="preview": Retorna preview dos artigos (sem salvar)
+    - action="save": Salva automaticamente (com ou sem PDFs)
     """
+    
+    if not bibtex_file.filename.endswith(('.bib', '.bibtex')):
+        raise HTTPException(status_code=400, detail="Apenas arquivos .bib ou .bibtex são permitidos")
+    
+    if pdf_zip and not pdf_zip.filename.endswith('.zip'):
+        raise HTTPException(status_code=400, detail="Arquivo ZIP deve ter extensão .zip")
+    
+    # Verificar se usuário está logado e é admin (para action="save")
+    current_user = None
+    if action == "save":
+        if not authorization:
+            raise HTTPException(status_code=401, detail="Necessário estar logado como admin para salvar artigos")
+        
+        current_user = get_current_user_from_token(authorization, db)
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Token inválido")
+        
+        if current_user.perfil != "admin":
+            raise HTTPException(status_code=403, detail="Apenas administradores podem salvar artigos via BibTeX")
+    
     try:
-        articles = request_data.get("articles", [])
-        edicao_id = request_data.get("edicao_id")
+        # Ler e processar BibTeX
+        bibtex_content = await bibtex_file.read()
+        bibtex_str = bibtex_content.decode('utf-8')
+        bib_database = bibtexparser.loads(bibtex_str)
         
-        if not edicao_id:
-            raise HTTPException(status_code=400, detail="edicao_id é obrigatório")
-        
-        saved_articles = []
-        
-        for article_data in articles:
-            # Criar autores se não existirem
-            author_ids = []
-            for author_info in article_data.get("authors", []):
-                nome = author_info.get("nome", "")
-                sobrenome = author_info.get("sobrenome", "")
+        # Se é apenas preview
+        if action == "preview":
+            articles_preview = []
+            
+            for entry in bib_database.entries:
+                article_data = {
+                    "titulo": entry.get('title', '').replace('{', '').replace('}', ''),
+                    "area": entry.get('keywords', '') or entry.get('subject', ''),
+                    "palavras_chave": entry.get('keywords', ''),
+                    "resumo": entry.get('abstract', ''),
+                    "doi": entry.get('doi', ''),
+                    "categoria": entry.get('type', entry.get('ENTRYTYPE', '')),
+                    "data_publicacao": entry.get('year', ''),
+                    "bibtex_key": entry.get('ID', ''),
+                    "booktitle": entry.get('booktitle', ''),
+                    "authors": []
+                }
                 
-                # Procurar autor existente
-                existing_author = db.query(Author).filter(
-                    Author.nome == nome,
-                    Author.sobrenome == sobrenome
-                ).first()
+                # Processar autores
+                if 'author' in entry:
+                    authors_str = entry['author']
+                    author_names = [name.strip() for name in authors_str.split(' and ')]
+                    
+                    for author_name in author_names:
+                        if ',' in author_name:
+                            parts = author_name.split(',', 1)
+                            sobrenome = parts[0].strip()
+                            nome = parts[1].strip() if len(parts) > 1 else ""
+                        else:
+                            parts = author_name.strip().split()
+                            if len(parts) > 1:
+                                nome = ' '.join(parts[:-1])
+                                sobrenome = parts[-1]
+                            else:
+                                nome = parts[0] if parts else ""
+                                sobrenome = ""
+                        
+                        article_data["authors"].append({
+                            "nome": nome,
+                            "sobrenome": sobrenome
+                        })
                 
-                if existing_author:
-                    author_ids.append(existing_author.id)
-                else:
-                    # Criar novo autor
-                    slug = f"{nome.lower()}-{sobrenome.lower()}".replace(" ", "-")
-                    new_author = Author(
-                        nome=nome,
-                        sobrenome=sobrenome,
-                        slug=slug
+                articles_preview.append(article_data)
+            
+            return {
+                "message": f"Arquivo processado com sucesso. Encontrados {len(articles_preview)} artigos.",
+                "articles": articles_preview,
+                "total": len(articles_preview)
+            }
+        
+        # Se é para salvar automaticamente
+        elif action == "save":
+            relatorio = {
+                "processados": 0,
+                "cadastrados": 0,
+                "pulados": [],
+                "erros": [],
+                "edicoes_criadas": []
+            }
+            
+            # Processar PDFs se fornecidos
+            pdf_files = {}
+            if pdf_zip:
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    zip_path = os.path.join(temp_dir, "pdfs.zip")
+                    with open(zip_path, "wb") as f:
+                        f.write(await pdf_zip.read())
+                    
+                    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                        for file_info in zip_ref.infolist():
+                            if file_info.filename.endswith('.pdf'):
+                                pdf_name = os.path.splitext(file_info.filename)[0]
+                                pdf_content = zip_ref.read(file_info.filename)
+                                pdf_files[pdf_name] = pdf_content
+            
+            # Processar cada entrada
+            for entry in bib_database.entries:
+                relatorio["processados"] += 1
+                entry_id = entry.get('ID', f'entry_{relatorio["processados"]}')
+                
+                try:
+                    # Validar campos obrigatórios
+                    campos_obrigatorios = ['title', 'author']
+                    if pdf_files:  # Se tem PDFs, exigir booktitle e year
+                        campos_obrigatorios.extend(['booktitle', 'year'])
+                    
+                    campos_faltando = [campo for campo in campos_obrigatorios if not entry.get(campo)]
+                    
+                    if campos_faltando:
+                        relatorio["pulados"].append({
+                            "id": entry_id,
+                            "motivo": f"Campos obrigatórios faltando: {', '.join(campos_faltando)}"
+                        })
+                        continue
+                    
+                    # Se tem PDFs, verificar se existe correspondente
+                    if pdf_files and entry_id not in pdf_files:
+                        relatorio["pulados"].append({
+                            "id": entry_id,
+                            "motivo": f"PDF não encontrado: {entry_id}.pdf"
+                        })
+                        continue
+                    
+                    # Identificar ou criar evento e edição automaticamente
+                    edicao_id = None
+                    
+                    if entry.get('booktitle') and entry.get('year'):
+                        booktitle = entry['booktitle']
+                        year = int(entry['year'])
+                        
+                        # Tentar encontrar evento pelo booktitle (busca flexível)
+                        evento = db.query(Event).filter(
+                            Event.nome.ilike(f"%{booktitle}%")
+                        ).first()
+                        
+                        if not evento:
+                            # Criar evento baseado no booktitle
+                            # Gerar slug do evento
+                            import re
+                            slug_evento = re.sub(r'[^a-zA-Z0-9]', '-', booktitle.lower())
+                            slug_evento = re.sub(r'-+', '-', slug_evento).strip('-')[:50]
+                            
+                            # Garantir slug único
+                            contador = 1
+                            slug_original = slug_evento
+                            while db.query(Event).filter(Event.slug == slug_evento).first():
+                                slug_evento = f"{slug_original}-{contador}"
+                                contador += 1
+                            
+                            # USAR O ID DO USUÁRIO LOGADO COMO ADMIN
+                            evento = Event(
+                                nome=booktitle,
+                                slug=slug_evento,
+                                admin_id=current_user.id  # Usar o ID do usuário logado
+                            )
+                            db.add(evento)
+                            db.flush()
+                            relatorio["edicoes_criadas"].append(f"Evento: {booktitle}")
+                        
+                        # Buscar ou criar edição
+                        edicao = db.query(Edition).filter(
+                            Edition.evento_id == evento.id,
+                            Edition.ano == year
+                        ).first()
+                        
+                        if not edicao:
+                            # Criar edição
+                            slug_edicao = f"{evento.slug}-{year}"
+                            edicao = Edition(
+                                ano=year,
+                                evento_id=evento.id,
+                                slug=slug_edicao
+                            )
+                            db.add(edicao)
+                            db.flush()
+                            relatorio["edicoes_criadas"].append(f"Edição: {booktitle} {year}")
+                        
+                        edicao_id = edicao.id
+                    else:
+                        # Se não tem booktitle/year, usar primeira edição disponível
+                        edicao_default = db.query(Edition).first()
+                        if edicao_default:
+                            edicao_id = edicao_default.id
+                        else:
+                            relatorio["pulados"].append({
+                                "id": entry_id,
+                                "motivo": "Nenhuma edição disponível no sistema e sem booktitle/year para criar nova"
+                            })
+                            continue
+                    
+                    # Verificar duplicatas
+                    titulo = entry['title'].replace('{', '').replace('}', '')
+                    artigo_existente = db.query(Article).filter(
+                        Article.titulo == titulo,
+                        Article.edicao_id == edicao_id
+                    ).first()
+                    
+                    if artigo_existente:
+                        relatorio["pulados"].append({
+                            "id": entry_id,
+                            "motivo": "Artigo já existe nesta edição"
+                        })
+                        continue
+                    
+                    # Processar autores
+                    author_ids = []
+                    authors_str = entry['author']
+                    author_names = [name.strip() for name in authors_str.split(' and ')]
+                    
+                    for author_name in author_names:
+                        if ',' in author_name:
+                            parts = author_name.split(',', 1)
+                            sobrenome = parts[0].strip()
+                            nome = parts[1].strip() if len(parts) > 1 else ""
+                        else:
+                            parts = author_name.strip().split()
+                            if len(parts) > 1:
+                                nome = ' '.join(parts[:-1])
+                                sobrenome = parts[-1]
+                            else:
+                                nome = parts[0] if parts else ""
+                                sobrenome = ""
+                        
+                        # Buscar ou criar autor
+                        autor_existente = db.query(Author).filter(
+                            Author.nome == nome,
+                            Author.sobrenome == sobrenome
+                        ).first()
+                        
+                        if not autor_existente:
+                            slug = f"{nome.lower()}-{sobrenome.lower()}"
+                            autor_slug = slug
+                            contador = 1
+                            while db.query(Author).filter(Author.slug == autor_slug).first():
+                                autor_slug = f"{slug}-{contador}"
+                                contador += 1
+                            
+                            novo_autor = Author(nome=nome, sobrenome=sobrenome, slug=autor_slug)
+                            db.add(novo_autor)
+                            db.flush()
+                            author_ids.append(novo_autor.id)
+                        else:
+                            author_ids.append(autor_existente.id)
+                    
+                    # Salvar PDF se existe
+                    pdf_path_final = None
+                    if entry_id in pdf_files:
+                        pdf_filename = f"{entry_id}.pdf"
+                        pdf_path_final = f"/uploads/{pdf_filename}"
+                        
+                        full_pdf_path = os.path.join(uploads_dir, pdf_filename)
+                        with open(full_pdf_path, "wb") as pdf_file:
+                            pdf_file.write(pdf_files[entry_id])
+                    
+                    # Criar artigo
+                    novo_artigo = Article(
+                        titulo=titulo,
+                        resumo=entry.get('abstract', ''),
+                        area=entry.get('keywords', '') or entry.get('subject', ''),
+                        palavras_chave=entry.get('keywords', ''),
+                        pdf_path=pdf_path_final,
+                        edicao_id=edicao_id
                     )
-                    db.add(new_author)
-                    db.flush()  # Para obter o ID
-                    author_ids.append(new_author.id)
+                    
+                    db.add(novo_artigo)
+                    db.flush()
+                    
+                    # Associar autores
+                    for author_id in author_ids:
+                        db.execute(
+                            artigo_autor.insert().values(
+                                artigo_id=novo_artigo.id,
+                                autor_id=author_id
+                            )
+                        )
+                    
+                    relatorio["cadastrados"] += 1
+                    
+                    # Enviar notificações
+                    await enviar_notificacao_novo_artigo(novo_artigo.id, db)
+                    
+                except Exception as e:
+                    relatorio["erros"].append({
+                        "id": entry_id,
+                        "erro": str(e)
+                    })
+                    db.rollback()
+                    continue
             
-            # Criar artigo
-            new_article = Article(
-                titulo=article_data.get("titulo", ""),
-                area=article_data.get("area", ""),
-                palavras_chave=article_data.get("palavras_chave", ""),
-                resumo=article_data.get("resumo", ""),
-                doi=article_data.get("doi", ""),
-                categoria=article_data.get("categoria", ""),
-                edicao_id=edicao_id,
-                pdf_path=None  # Sem PDF para importação BibTeX
-            )
+            db.commit()
             
-            db.add(new_article)
-            db.flush()  # Para obter o ID
-            
-            # Associar autores
-            for author_id in author_ids:
-                db.execute(
-                    artigo_autor.insert().values(
-                        artigo_id=new_article.id,
-                        autor_id=author_id
-                    )
-                )
-            
-            saved_articles.append({
-                "id": new_article.id,
-                "titulo": new_article.titulo
-            })
+            return {
+                "message": "Processamento concluído",
+                "relatorio": relatorio
+            }
         
-        db.commit()
-        
-        return {
-            "message": f"Importação concluída com sucesso! {len(saved_articles)} artigos salvos.",
-            "saved_articles": saved_articles
-        }
-        
+        else:
+            raise HTTPException(status_code=400, detail="Ação inválida. Use 'preview' ou 'save'")
+    
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Erro ao salvar artigos: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro no processamento: {str(e)}")
 
-# ----------------------
-# Usuários
-# ----------------------
-SECRET_KEY = "your-secret-key"
-
-def sha256(s: str) -> str:
-    return hashlib.sha256(s.encode("utf-8")).hexdigest()
-
-ADMIN_EMAILS = {"luisalcarvalhaes@gmail.com", "outroadmin@email.com"}  # coloque os emails de admin aqui
-# senha123 
+# =====================================================================
+# ENDPOINTS DE AUTENTICAÇÃO
+# =====================================================================
 
 @app.post("/api/auth/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -637,7 +1011,6 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
-
 @app.post("/api/auth/login")
 def login(data: LoginRequest, db: Session = Depends(get_db)):
     email = data.email
@@ -650,7 +1023,7 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
     if str(user.senha_hash) != sha256(password):
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
 
-    # Gera um token simples (substituindo JWT temporariamente)
+    # Gera um token simples
     try:
         token = f"user_{user.id}_{sha256(str(user.id) + SECRET_KEY)}"
         return {"token": token, "user": {
@@ -662,22 +1035,15 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao gerar token: {str(e)}")
 
-# @app.get("/usuarios", response_model=list[UserRead])
-# def listar_usuarios(db: Session = Depends(get_db)):
-#     return db.query(User).all()
+# =====================================================================
+# ENDPOINTS DE NOTIFICAÇÕES
+# =====================================================================
 
-@app.put("/usuarios/{user_id}/notificacoes")
 @app.put("/usuarios/{user_id}/notificacoes")
 def atualizar_preferencias_notificacao(user_id: int, receber_notificacoes: bool, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
-    
-    # Atualizar a preferência de notificação do usuário
-    # db.query(User).filter(User.id == user_id).update({
-    #     User.notificar_novos_artigos: 1 if receber_notificacoes else 0
-    # })
-    # db.commit()
     
     return {
         "message": "Preferências de notificação atualizadas com sucesso",
@@ -695,9 +1061,6 @@ def obter_preferencias_notificacao(user_id: int, db: Session = Depends(get_db)):
         "receber_notificacoes": bool(user.receive_notifications)
     }
 
-# ----------------------
-# Endpoints de Notificação para Autores
-# ----------------------
 @app.post("/usuarios/{user_id}/seguir-autor/{author_id}")
 def seguir_autor(user_id: int, author_id: int, db: Session = Depends(get_db)):
     # Verificar se usuário existe
@@ -724,7 +1087,6 @@ def seguir_autor(user_id: int, author_id: int, db: Session = Depends(get_db)):
         return {"message": f"Você voltou a seguir {author.nome} {author.sobrenome}"}
     
     # Criar nova notificação
-    from datetime import date
     notification = Notification(
         user_id=user_id,
         author_id=author_id,
@@ -749,7 +1111,7 @@ def parar_de_seguir_autor(user_id: int, author_id: int, db: Session = Depends(ge
     if not author:
         raise HTTPException(status_code=404, detail="Autor não encontrado")
     
-    # Update using database update instead of attribute assignment
+    # Update usando database update ao invés de atribuição de atributo
     db.query(Notification).filter(
         (Notification.user_id == user_id) & (Notification.author_id == author_id)
     ).update({"is_active": 0})
@@ -757,14 +1119,9 @@ def parar_de_seguir_autor(user_id: int, author_id: int, db: Session = Depends(ge
     
     return {"message": f"Você parou de seguir {author.nome} {author.sobrenome}"}
 
-# Endpoint para seguir/parar de seguir autor (com autenticação)
 @app.post("/seguir-autor")
-def seguir_autor_auth(
-    request: dict,
-    db: Session = Depends(get_db)
-):
-    # Para simplicidade, vamos usar o user_id = 1 como padrão
-    # Em um sistema real, extrairíamos o user_id do token JWT
+def seguir_autor_auth(request: dict, db: Session = Depends(get_db)):
+    # Para simplicidade, usando user_id = 1 como padrão
     user_id = 1
     author_id = request.get("autor_id")
     acao = request.get("acao")  # "seguir" ou "parar_seguir"
@@ -819,11 +1176,9 @@ def seguir_autor_auth(
             detail="Ação inválida. Use 'seguir' ou 'parar_seguir'"
         )
 
-# Endpoint para listar autores seguidos (com autenticação)
 @app.get("/autores-seguidos")
 def listar_autores_seguidos_auth(db: Session = Depends(get_db)):
-    # Para simplicidade, vamos usar o user_id = 1 como padrão
-    # Em um sistema real, extrairíamos o user_id do token JWT
+    # Para simplicidade, usando user_id = 1 como padrão
     user_id = 1
     
     notifications = db.query(Notification).filter(
@@ -847,119 +1202,9 @@ def listar_autores_seguidos_auth(db: Session = Depends(get_db)):
         "autores": autores_seguidos
     }
 
-# ----------------------
-# Sistema de Envio de Emails
-# ----------------------
-async def enviar_notificacao_novo_artigo(article_id: int, db: Session):
-    """Envia notificação por email quando um novo artigo é publicado"""
-    try:
-        # Buscar o artigo
-        article = db.query(Article).filter(Article.id == article_id).first()
-        if not article:
-            return
-        
-        # Buscar autores do artigo
-        for author in article.authors:
-            # 1. Verificar se o próprio autor é um usuário cadastrado
-            user_author = db.query(User).filter(
-                (User.nome.ilike(f"%{author.nome}%")) & 
-                (User.receive_notifications == 1)
-            ).first()
-            
-            if user_author:
-                # Verificar se já enviou email para este artigo/usuário
-                email_sent = db.query(EmailLog).filter(
-                    (EmailLog.user_id == user_author.id) & (EmailLog.article_id == article.id)
-                ).first()
-                
-                if not email_sent:
-                    # Enviar email para o próprio autor
-                    try:
-                        await send_notification_email(
-                            str(user_author.email), 
-                            f"{str(author.nome)} {str(author.sobrenome)}", 
-                            str(article.titulo), 
-                            str(article.edition.event.nome) if article.edition and article.edition.event else "Evento"
-                        )
-                        
-                        # Registrar envio
-                        log = EmailLog(
-                            user_id=user_author.id,
-                            article_id=article.id,
-                            author_id=author.id,
-                            sent_at=date.today(),
-                            email_subject=f"Novo artigo: {str(article.titulo)}",
-                            status="sent"
-                        )
-                        db.add(log)
-                        
-                    except Exception as e:
-                        # Registrar falha
-                        log = EmailLog(
-                            user_id=user_author.id,
-                            article_id=article.id,
-                            author_id=author.id,
-                            sent_at=date.today(),
-                            email_subject=f"Novo artigo: {str(article.titulo)}",
-                            status="failed"
-                        )
-                        db.add(log)
-                        print(f"Erro ao enviar email para {str(user_author.email)}: {e}")
-            
-            # 2. Buscar usuários que seguem este autor (sistema original)
-            notifications = db.query(Notification).filter(
-                (Notification.author_id == author.id) & (Notification.is_active == 1)
-            ).all()
-            
-            for notification in notifications:
-                user = db.query(User).filter(
-                    (User.id == notification.user_id) & (User.receive_notifications == 1)
-                ).first()
-                
-                if user:
-                    # Verificar se já enviou email para este artigo/usuário
-                    email_sent = db.query(EmailLog).filter(
-                        (EmailLog.user_id == user.id) & (EmailLog.article_id == article.id)
-                    ).first()
-                    
-                    if not email_sent:
-                        # Enviar email
-                        try:
-                            await send_notification_email(
-                                str(user.email), 
-                                f"{str(author.nome)} {str(author.sobrenome)}", 
-                                str(article.titulo), 
-                                str(article.edition.event.nome) if article.edition and article.edition.event else "Evento"
-                            )
-                            
-                            # Registrar envio
-                            log = EmailLog(
-                                user_id=user.id,
-                                article_id=article.id,
-                                author_id=author.id,
-                                sent_at=date.today(),
-                                email_subject=f"Novo artigo: {str(article.titulo)}",
-                                status="sent"
-                            )
-                            db.add(log)
-                            
-                        except Exception as e:
-                            # Registrar falha
-                            log = EmailLog(
-                                user_id=user.id,
-                                article_id=article.id,
-                                author_id=author.id,
-                                sent_at=date.today(),
-                                email_subject=f"Novo artigo: {str(article.titulo)}",
-                                status="failed"
-                            )
-                            db.add(log)
-                            print(f"Erro ao enviar email para {str(user.email)}: {e}")
-        
-        db.commit()
-        
-    except Exception as e:
-        print(f"Erro no sistema de notificação: {e}")
+# =====================================================================
+# ENDPOINTS ADMINISTRATIVOS
+# =====================================================================
 
 @app.post("/admin/enviar-notificacoes/{article_id}")
 async def trigger_notifications(article_id: int, db: Session = Depends(get_db)):
@@ -1101,4 +1346,54 @@ async def get_email_logs(db: Session = Depends(get_db)):
             "error": f"Erro ao consultar logs: {str(e)}"
         }
 
-Base.metadata.create_all(bind=engine)
+# Adicione o import do Header no topo do arquivo:
+from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Form, Header
+
+# Função para extrair usuário do token:
+def get_current_user_from_token(authorization: str = None, db: Session = None):
+    """Extrai usuário atual do token de autorização"""
+    if not authorization or not db:
+        return None
+    
+    try:
+        # Remover "Bearer " se presente
+        if authorization.startswith("Bearer "):
+            authorization = authorization.replace("Bearer ", "")
+        
+        # Token tem formato "user_ID_hash"
+        token_parts = authorization.split("_")
+        if len(token_parts) >= 2 and token_parts[0] == "user":
+            user_id = int(token_parts[1])
+            user = db.query(User).filter(User.id == user_id).first()
+            
+            # Debug: Imprimir informações do usuário
+            if user:
+                print(f"Usuário encontrado: ID={user.id}, Nome={user.nome}, Perfil={user.perfil}")
+            else:
+                print(f"Usuário não encontrado para ID={user_id}")
+            
+            return user
+    except Exception as e:
+        print(f"Erro ao extrair usuário do token: {e}")
+        pass
+    
+    return None
+
+# Adicione endpoint para obter dados do usuário atual:
+@app.get("/api/auth/me")
+def get_current_user_info(authorization: str = None, db: Session = Depends(get_db)):
+    """Retorna informações do usuário atual baseado no token"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Token não fornecido")
+    
+    user = get_current_user_from_token(authorization, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Token inválido")
+    
+    return {
+        "id": user.id,
+        "nome": user.nome,
+        "email": user.email,
+        "perfil": user.perfil,
+        "receive_notifications": user.receive_notifications
+    }
