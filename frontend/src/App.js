@@ -130,7 +130,7 @@ function App() {
             <Route path="/admin/articles/new" element={<NewArticlePage onReload={reloadArtigos} />} />
             <Route path="/admin/articles/:id/edit" element={<NewArticlePage onReload={reloadArtigos} />} />
             <Route path="/my-articles" element={<AdminArticlesPage artigos={artigos} onReload={reloadArtigos} />} />
-            <Route path="/admin/events" element={<NewEventPage />} />
+            <Route path="/admin/events/new" element={<NewEventPage />} />
             <Route path="/dashboard" element={<AdminDashboard 
                   eventos={eventos} 
                   edicoes={edicoes} 
