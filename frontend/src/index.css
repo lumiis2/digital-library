@@ -6,12 +6,21 @@
   font-family: 'PixelFont';
   src: url('./assets/font.ttf') format('truetype');
 }
+@font-face {
+  font-family: 'BodyFont';
+  src: url('./assets/font-body.ttf') format('truetype');
+}
 
 body {
   margin: 0;
-  font-family: 'PixelFont', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'BodyFont', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #00b4cf; /* fallback */
+}
+
+h1, h2, h3, .font-pixel, .main-title {
+  font-family: 'PixelFont', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+               'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif !important;
 }

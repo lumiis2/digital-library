@@ -5,6 +5,7 @@ module.exports = {
     extend: {
       fontFamily: {
         pixel: ['PixelFont', 'sans-serif'],
+        body: ['BodyFont', 'sans-serif'],
       },
       colors: {
          preto: '#1A1A1A',    // floresta
