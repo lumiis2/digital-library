@@ -3,6 +3,36 @@ from sqlalchemy.orm import relationship
 from .database import Base
 import re, unicodedata
 
+# ============================================================
+# Função universal para gerar slug
+# ============================================================
+
+def gerar_slug_generico(*partes):
+    """
+    Gera um slug a partir de múltiplas partes (nome, sobrenome, ano, etc.)
+    Exemplo:
+        gerar_slug_generico("Alan", "Turing") -> 'alan-turing'
+        gerar_slug_generico("Congresso", 2024) -> 'congresso-2024'
+    """
+    # Junta apenas as partes que não estão vazias ou nulas
+    texto = "-".join(str(p).strip() for p in partes if p and str(p).strip())
+
+    # Remove acentos
+    texto = unicodedata.normalize('NFKD', texto).encode('ascii', 'ignore').decode('ascii')
+    # Deixa minúsculo
+    texto = texto.lower()
+    # Substitui tudo que não for letra/número por hífen
+    texto = re.sub(r'[^a-z0-9]+', '-', texto)
+    # Remove hífens duplicados e dos extremos
+    texto = texto.strip('-')
+
+    return texto or None  # Retorna None se tudo for vazio
+
+
+# ============================================================
+# Tabelas e Modelos
+# ============================================================
+
 # Tabela de associação entre artigos e autores
 artigo_autor = Table(
     'artigo_autor',
@@ -11,25 +41,30 @@ artigo_autor = Table(
     Column('autor_id', Integer, ForeignKey('autor.id'), primary_key=True)
 )
 
-def gerar_slug(nome, sobrenome):
-    texto = f"{nome}-{sobrenome}"
-    texto = unicodedata.normalize('NFKD', texto).encode('ascii', 'ignore').decode('ascii')
-    texto = texto.lower()
-    texto = re.sub(r'[^a-z0-9]+', '-', texto).strip('-')
-    return texto
 
+# -------------------------------
+# Modelo: Evento
+# -------------------------------
 class Event(Base):
     __tablename__ = "evento"
     
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String, nullable=False)
     slug = Column(String, unique=True, nullable=False)
-    admin_id = Column(Integer, ForeignKey("usuario.id"), nullable=True)  # MANTER admin_id
+    admin_id = Column(Integer, ForeignKey("usuario.id"), nullable=True)
     
     # Relacionamentos
     editions = relationship("Edition", back_populates="event")
     admin = relationship("User", back_populates="events")
 
+    def __init__(self, nome, admin_id=None, **kwargs):
+        super().__init__(nome=nome, admin_id=admin_id, **kwargs)
+        self.slug = gerar_slug_generico(nome)
+
+
+# -------------------------------
+# Modelo: Edição
+# -------------------------------
 class Edition(Base):
     __tablename__ = "edicao"
     
@@ -42,22 +77,34 @@ class Edition(Base):
     event = relationship("Event", back_populates="editions")
     articles = relationship("Article", back_populates="edition")
 
+    def __init__(self, ano, evento_id, event_nome=None, **kwargs):
+        super().__init__(ano=ano, evento_id=evento_id, **kwargs)
+        self.slug = gerar_slug_generico(ano)
+
+
+# -------------------------------
+# Modelo: Autor
+# -------------------------------
 class Author(Base):
     __tablename__ = "autor"
     
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String, nullable=False)
-    sobrenome = Column(String, nullable=False)
-    slug = Column(String, unique=True, nullable=True)  # MANTER slug
+    sobrenome = Column(String, nullable=True)
+    slug = Column(String, unique=True, nullable=True)
     
     # Relacionamentos
     articles = relationship("Article", secondary=artigo_autor, back_populates="authors")
     notifications = relationship("Notification", back_populates="author")
 
-    def __init__(self, nome, sobrenome, **kwargs):
+    def __init__(self, nome, sobrenome=None, **kwargs):
         super().__init__(nome=nome, sobrenome=sobrenome, **kwargs)
-        self.slug = gerar_slug(nome, sobrenome)
+        self.slug = gerar_slug_generico(nome, sobrenome)
 
+
+# -------------------------------
+# Modelo: Artigo
+# -------------------------------
 class Article(Base):
     __tablename__ = "artigo"
     
@@ -74,6 +121,10 @@ class Article(Base):
     edition = relationship("Edition", back_populates="articles")
     authors = relationship("Author", secondary=artigo_autor, back_populates="articles")
 
+
+# -------------------------------
+# Modelo: Usuário
+# -------------------------------
 class User(Base):
     __tablename__ = "usuario"
     
@@ -86,8 +137,12 @@ class User(Base):
     
     # Relacionamentos
     notifications = relationship("Notification", back_populates="user")
-    events = relationship("Event", back_populates="admin")  # MANTER relacionamento
+    events = relationship("Event", back_populates="admin")
 
+
+# -------------------------------
+# Modelo: Notificação
+# -------------------------------
 class Notification(Base):
     __tablename__ = "notificacao"
     
@@ -101,6 +156,10 @@ class Notification(Base):
     user = relationship("User", back_populates="notifications")
     author = relationship("Author", back_populates="notifications")
 
+
+# -------------------------------
+# Modelo: Log de Emails
+# -------------------------------
 class EmailLog(Base):
     __tablename__ = "email_log"
     
@@ -111,3 +170,4 @@ class EmailLog(Base):
     sent_at = Column(Date, default=func.current_date())
     email_subject = Column(String)
     status = Column(String, default="sent")
+

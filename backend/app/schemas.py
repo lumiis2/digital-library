@@ -8,6 +8,7 @@ from typing import Optional
 class EventoCreate(BaseModel):
     nome: str
     sigla: str  # será usado como slug
+    admin_id: Optional[int] = None
 
 class EventoRead(BaseModel):
     id: int

@@ -1,6 +1,8 @@
 # =====================================================================
 # IMPORTS
 # =====================================================================
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI
 from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Form, Header
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
@@ -40,6 +42,16 @@ from .schemas import (
 # =====================================================================
 # CONFIGURAÇÕES
 # =====================================================================
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # origem do frontend
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Configurações de email
 EMAIL_CONFIG = {
