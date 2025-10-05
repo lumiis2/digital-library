@@ -86,16 +86,18 @@ class UserCreate(BaseModel):
     nome: str
     email: EmailStr
     senha_hash: str
-    perfil: Optional[str] = "usuario"
+    perfil: str = "usuario"
+    receive_notifications: bool = True
 
 class UserRead(BaseModel):
     id: int
     nome: str
     email: EmailStr
-    perfil: Optional[str] = "usuario"
-    receive_notifications: Optional[int] = 1
+    perfil: str
+    receive_notifications: bool = True
 
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        from_attributes = True
 
 # ----------------------
 # Notificações

@@ -160,10 +160,8 @@ function App() {
             <Route path="/author/:authorId" element={<AuthorDetailPage />} />
             <Route path="/editions" element={<EditionsPage data={edicoes} loading={loadingEdicoes} onReload={reloadEdicoes} />} />
             
-            {/* ROTAS DINÂMICAS POR ÚLTIMO */}
+            {/* ROTAS DINÂMICAS POR ÚLTIMO - REMOVIDAS AS CONFLITANTES */}
             <Route path="/:eventSlug/:year" element={<EditionDetailPage />} />
-            <Route path="/:eventSlug" element={<EventDetailPage />} />
-            <Route path="/:authorSlug" element={<AuthorDetailPage />} />
           </Routes>
         </div>
       </div>

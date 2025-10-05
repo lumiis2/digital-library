@@ -5,7 +5,11 @@ export const apiEndpoints = {
   autores: '/autores',
   eventos: '/eventos',
   edicoes: '/edicoes',
-  root: '/'
+  root: '/',
+  // Authentication endpoints
+  login: '/api/auth/login',
+  register: '/api/auth/register',
+  me: '/api/auth/me'
 };
 
 export const fetchData = async (endpoint) => {
@@ -95,6 +99,45 @@ export const api = {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
+      }
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
+  }
+};
+
+// Authentication API functions
+export const authAPI = {
+  login: async (email, password) => {
+    const response = await fetch(`${API_BASE_URL}${apiEndpoints.login}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password })
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
+  },
+  
+  register: async (userData) => {
+    const response = await fetch(`${API_BASE_URL}${apiEndpoints.register}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData)
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
+  },
+
+  getCurrentUser: async (token) => {
+    const response = await fetch(`${API_BASE_URL}${apiEndpoints.me}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       }
     });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
