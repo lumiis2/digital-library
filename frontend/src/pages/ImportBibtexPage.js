@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import LoadingSpinner from "../components/common/LoadingSpinner";
+import { useAuth } from '../components/common/AuthContext';
 
 const ImportBibtexPage = ({ onReload }) => {
   const [file, setFile] = useState(null);
@@ -10,11 +11,23 @@ const ImportBibtexPage = ({ onReload }) => {
   const [showPreview, setShowPreview] = useState(false);
   const [relatorio, setRelatorio] = useState(null);
   const navigate = useNavigate();
+  const { user, isAdmin } = useAuth();
+
+  // Verificar se é admin
+  if (!user || !isAdmin()) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <h3 className="text-red-800 font-medium">Acesso Negado</h3>
+          <p className="text-red-600 mt-2">Apenas administradores podem importar BibTeX</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
     setShowPreview(false);
-    setArticlesPreview([]);
     setRelatorio(null);
   };
 
@@ -30,24 +43,18 @@ const ImportBibtexPage = ({ onReload }) => {
 
     setLoading(true);
     const formData = new FormData();
-    
-    // Obter token do localStorage
     const token = localStorage.getItem('authToken');
     
-    // Usar o endpoint unificado /upload-bibtex
     formData.append("bibtex_file", file);
     
     if (pdfZip) {
-      // Modo: Salvar automaticamente com PDFs
       formData.append("pdf_zip", pdfZip);
       formData.append("action", "save");
-      // REMOVER: formData.append("authorization", token); - Não vai no FormData
-    
+      
       try {
         const response = await fetch("http://localhost:8000/upload-bibtex", {
           method: "POST",
           headers: {
-            // ADICIONAR: Token vai no header, não no FormData
             ...(token && { 'Authorization': `Bearer ${token}` })
           },
           body: formData,
@@ -61,12 +68,10 @@ const ImportBibtexPage = ({ onReload }) => {
         const data = await response.json();
         setRelatorio(data.relatorio);
         
-        // Recarregar lista de artigos
         if (onReload) {
           onReload();
         }
         
-        // Limpar formulário
         setFile(null);
         setPdfZip(null);
         
@@ -76,16 +81,11 @@ const ImportBibtexPage = ({ onReload }) => {
         alert(`Erro: ${error.message}`);
       }
     } else {
-      // Modo: Preview (sem PDFs)
       formData.append("action", "preview");
       
       try {
         const response = await fetch("http://localhost:8000/upload-bibtex", {
           method: "POST",
-          headers: {
-            // Token no header também para preview (opcional)
-            ...(token && { 'Authorization': `Bearer ${token}` })
-          },
           body: formData,
         });
 
@@ -109,19 +109,14 @@ const ImportBibtexPage = ({ onReload }) => {
     setLoading(true);
 
     try {
-      // Obter token do localStorage
       const token = localStorage.getItem('authToken');
-      
-      // Usar o endpoint unificado para salvar o preview
       const formData = new FormData();
       formData.append("bibtex_file", file);
       formData.append("action", "save");
-      // REMOVER: formData.append("authorization", token); - Não vai no FormData
 
       const response = await fetch("http://localhost:8000/upload-bibtex", {
         method: "POST",
         headers: {
-          // ADICIONAR: Token vai no header
           ...(token && { 'Authorization': `Bearer ${token}` })
         },
         body: formData,
@@ -135,19 +130,16 @@ const ImportBibtexPage = ({ onReload }) => {
       const result = await response.json();
       
       if (result.relatorio) {
-        // Mostrar relatório
         setRelatorio(result.relatorio);
         alert(`Importação concluída! ${result.relatorio.cadastrados} artigos salvos.`);
       } else {
         alert("Importação concluída com sucesso!");
       }
       
-      // Recarregar lista de artigos
       if (onReload) {
         onReload();
       }
       
-      // Limpar preview
       setArticlesPreview([]);
       setShowPreview(false);
       
@@ -309,7 +301,7 @@ const ImportBibtexPage = ({ onReload }) => {
               </div>
             </div>
           ) : (
-            /* Preview original */
+            /* Preview dos artigos */
             <div className="space-y-6">
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <h2 className="text-lg font-semibold text-green-800 mb-2">

@@ -1382,14 +1382,20 @@ def get_current_user_from_token(authorization: str = None, db: Session = None):
 
 # Adicione endpoint para obter dados do usuário atual:
 @app.get("/api/auth/me")
-def get_current_user_info(authorization: str = None, db: Session = Depends(get_db)):
+def get_current_user_info(authorization: str = Header(None), db: Session = Depends(get_db)):
     """Retorna informações do usuário atual baseado no token"""
+    print(f"🔍 DEBUG - Authorization header recebido: {authorization}")
+    
     if not authorization:
+        print("❌ Token não fornecido no header")
         raise HTTPException(status_code=401, detail="Token não fornecido")
     
     user = get_current_user_from_token(authorization, db)
     if not user:
+        print("❌ Token inválido ou usuário não encontrado")
         raise HTTPException(status_code=401, detail="Token inválido")
+    
+    print(f"✅ Usuário encontrado: {user.nome}, Perfil: {user.perfil}")
     
     return {
         "id": user.id,

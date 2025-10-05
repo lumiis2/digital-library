@@ -20,6 +20,7 @@ import EditionDetailPage from './pages/EditionDetailPage';
 import AuthorDetailPage from './pages/AuthorDetailPage';
 import UserSettingsPage from './pages/UserSettingsPage';
 import NewEditionPage from './pages/NewEditionPage';
+import EditionsPage from './pages/EditionsPage';
 
 function App() {
   const [artigos, setArtigos] = useState([]);
@@ -120,17 +121,28 @@ function App() {
                 />
               }
             />
+            
+            {/* ROTAS FIXAS PRIMEIRO - MUITO IMPORTANTE A ORDEM */}
             <Route path="/articles" element={<ArticlesPage artigos={artigos} loading={loadingArtigos} />} />
             <Route path="/authors" element={<AuthorsPage data={autores} loading={loadingAutores} />} />
             <Route path="/events" element={<EventsPage data={eventos} loading={loadingEventos} onReload={reloadEventos} />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
-            <Route path="/my-articles" element={<AdminArticlesPage artigos={artigos} onReload={reloadArtigos} />} />
+            <Route path="/configuracoes" element={<UserSettingsPage />} />
+            
+            {/* ROTAS ADMIN */}
             <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/admin/articles" element={<AdminArticlesPage artigos={artigos} onReload={reloadArtigos} />} />
             <Route path="/admin/articles/new" element={<NewArticlePage onReload={reloadArtigos} />} />
             <Route path="/admin/articles/:id/edit" element={<NewArticlePage onReload={reloadArtigos} />} />
-            <Route path="/my-articles" element={<AdminArticlesPage artigos={artigos} onReload={reloadArtigos} />} />
+            <Route path="/admin/events" element={<EventsPage data={eventos} loading={loadingEventos} onReload={reloadEventos} />} />
             <Route path="/admin/events/new" element={<NewEventPage />} />
+            <Route path="/admin/events/:id/edit" element={<EditEventPage/>} />
+            <Route path="/admin/edicoes/new" element={<NewEditionPage />} />
+            <Route path="/admin/edicoes/:id/edit" element={<NewEditionPage />} />
+            <Route path="/admin/import-bibtex" element={<ImportBibtexPage onReload={reloadArtigos} />} />
+            
+            {/* DASHBOARD */}
             <Route path="/dashboard" element={<AdminDashboard 
                   eventos={eventos} 
                   edicoes={edicoes} 
@@ -139,22 +151,19 @@ function App() {
                   onReloadEdicoes={reloadEdicoes}
                   onReloadArtigos={reloadArtigos}
                 />} />
-            <Route path="/admin/events/:id/edit" element={<EditEventPage/>} />
-            <Route path="/configuracoes" element={<UserSettingsPage />} />
-            <Route path="/admin/edicoes/new" element={<NewEditionPage />} />
-            <Route path="/admin/edicoes/:id/edit" element={<NewEditionPage />} />
             
-            {/* Rotas originais (mantidas para compatibilidade) */}
+            {/* ROTAS ESPECÍFICAS COM PARÂMETROS */}
             <Route path="/eventos/:slug" element={<EventDetailPage />} />
             <Route path="/eventos/:slug/:ano" element={<EditionDetailPage />} />
             <Route path="/edicoes/:eventoId/:ano" element={<EditionDetailPage />} />
             <Route path="/autores/:slug" element={<AuthorDetailPage />} />
-            
-            {/* Rotas amigáveis para eventos, edições e autores - devem vir por último */}
             <Route path="/author/:authorId" element={<AuthorDetailPage />} />
-            <Route path="/:authorSlug" element={<AuthorDetailPage />} />
+            <Route path="/editions" element={<EditionsPage data={edicoes} loading={loadingEdicoes} onReload={reloadEdicoes} />} />
+            
+            {/* ROTAS DINÂMICAS POR ÚLTIMO */}
             <Route path="/:eventSlug/:year" element={<EditionDetailPage />} />
             <Route path="/:eventSlug" element={<EventDetailPage />} />
+            <Route path="/:authorSlug" element={<AuthorDetailPage />} />
           </Routes>
         </div>
       </div>
