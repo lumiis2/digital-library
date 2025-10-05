@@ -51,6 +51,7 @@ class Event(Base):
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String, nullable=False)
     slug = Column(String, unique=True, nullable=False)
+    entidade_promotora = Column(String, nullable=True)
     admin_id = Column(Integer, ForeignKey("usuario.id"), nullable=True)
     
     # Relacionamentos
@@ -71,7 +72,7 @@ class Edition(Base):
     id = Column(Integer, primary_key=True, index=True)
     ano = Column(Integer, nullable=False)
     evento_id = Column(Integer, ForeignKey("evento.id"), nullable=False)
-    slug = Column(String, unique=True, nullable=False)
+    slug = Column(String, unique=True)
     
     # Relacionamentos
     event = relationship("Event", back_populates="editions")

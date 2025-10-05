@@ -236,7 +236,7 @@ const NewEditionPage = () => {
                 <option value="">Selecione um evento</option>
                 {eventos.map(evento => (
                   <option key={evento.id} value={evento.id}>
-                    {evento.nome} ({evento.slug.toUpperCase()})
+                    {evento.sigla} ({evento.slug.toUpperCase()})
                   </option>
                 ))}
               </select>
