@@ -26,7 +26,7 @@ const Navigation = () => {
   };
 
   return (
-    <nav className="bg-papel border-b border-madeira shadow-md font-pixel">
+  <nav className="bg-papel border-b border-madeira shadow-md font-body">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -48,7 +48,7 @@ const Navigation = () => {
                 <button
                   key={item.id}
                   onClick={() => navigate(item.path)}
-                  className="flex items-center space-x-1 px-4 py-2 rounded-lg text-floresta hover:bg-floresta hover:text-papel transition-colors font-semibold text-sm shadow-sm border border-madeira"
+                  className="flex items-center space-x-1 px-4 py-2 rounded-lg text-floresta hover:bg-neblina/15 hover:text-neblina transition-colors font-semibold text-sm shadow-sm border border-madeira"
                 >
                   {Icon && <Icon className="w-5 h-5" />}
                   <span>{item.label}</span>
@@ -60,7 +60,7 @@ const Navigation = () => {
             {isAuthenticated && isAdmin() && (
               <button
                 onClick={() => navigate('/admin')}
-                className="flex items-center space-x-1 px-4 py-2 rounded-lg text-douradoSol hover:bg-douradoSol/90 hover:text-papel transition-colors font-semibold text-sm shadow-sm border border-madeira"
+                className="flex items-center space-x-1 px-4 py-2 rounded-lg text-douradoSol hover:bg-neblina/15 hover:text-neblina transition-colors font-semibold text-sm shadow-sm border border-madeira"
               >
                 <svg
                   className="w-5 h-5"
@@ -93,13 +93,13 @@ const Navigation = () => {
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => navigate('/login')}
-                  className="px-4 py-2 rounded-lg font-semibold text-floresta hover:bg-floresta hover:text-papel transition-colors border border-madeira shadow-sm"
+                  className="px-4 py-2 rounded-lg font-semibold text-floresta hover:bg-neblina/15 hover:text-neblina transition-colors border border-madeira shadow-sm"
                 >
                   Entrar
                 </button>
                 <button
                   onClick={() => navigate('/register')}
-                  className="px-4 py-2 rounded-lg font-semibold bg-douradoSol text-papel hover:bg-douradoSol/90 transition-colors shadow-sm border border-madeira"
+                  className="px-4 py-2 rounded-lg font-semibold bg-douradoSol text-papel hover:bg-neblina/15 hover:text-neblina transition-colors shadow-sm border border-madeira"
                 >
                   Cadastrar
                 </button>
@@ -108,7 +108,7 @@ const Navigation = () => {
               <div className="relative">
                 <button
                   onClick={handleUserMenuToggle}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-floresta hover:bg-floresta hover:text-papel transition-colors border border-madeira shadow-sm"
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-floresta hover:bg-neblina/15 hover:text-neblina transition-colors border border-madeira shadow-sm"
                 >
                   <div className="w-8 h-8 bg-musgo rounded-full flex items-center justify-center select-none">
                     <span className="text-papel font-bold">
