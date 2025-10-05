@@ -994,7 +994,17 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         hashed = sha256(user.senha_hash)
         # Usa o perfil enviado pelo frontend, se for 'admin' ou 'usuario'
         perfil = user.perfil if hasattr(user, 'perfil') and user.perfil in ["admin", "usuario"] else "usuario"
-        new_user = User(nome=user.nome, email=str(user.email), senha_hash=hashed, perfil=perfil)
+        
+        # Usar o campo receive_notifications se fornecido, senão usar True como padrão
+        receive_notifications = getattr(user, 'receive_notifications', True)
+        
+        new_user = User(
+            nome=user.nome, 
+            email=str(user.email), 
+            senha_hash=hashed, 
+            perfil=perfil,
+            receive_notifications=1 if receive_notifications else 0
+        )
 
         db.add(new_user)
         db.commit()
@@ -1004,7 +1014,8 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
             "id": new_user.id,
             "nome": new_user.nome,
             "email": str(new_user.email),
-            "perfil": new_user.perfil  
+            "perfil": new_user.perfil,
+            "receive_notifications": bool(new_user.receive_notifications)
         }}
     except HTTPException:
         raise
@@ -1041,13 +1052,22 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
 # =====================================================================
 
 @app.put("/usuarios/{user_id}/notificacoes")
-def atualizar_preferencias_notificacao(user_id: int, receber_notificacoes: bool, db: Session = Depends(get_db)):
+def atualizar_preferencias_notificacao(user_id: int, request: dict, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     
+    receber_notificacoes = request.get("receber_notificacoes", True)
+    
+    # Atualizar no banco de dados
+    db.query(User).filter(User.id == user_id).update({
+        "receive_notifications": 1 if receber_notificacoes else 0
+    })
+    db.commit()
+    
     return {
         "message": "Preferências de notificação atualizadas com sucesso",
+        "user_id": user_id,
         "receber_notificacoes": receber_notificacoes
     }
 
