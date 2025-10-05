@@ -3,9 +3,9 @@ import { useAuth } from "../components/common/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 const AdminDashboard = ({ 
-  artigos, 
-  eventos, 
-  edicoes, 
+  artigos = [], // CORREÇÃO: Valor padrão
+  eventos = [], // CORREÇÃO: Valor padrão
+  edicoes = [], // CORREÇÃO: Valor padrão
   onReloadArtigos, 
   onReloadEventos, 
   onReloadEdicoes 
@@ -19,6 +19,11 @@ const AdminDashboard = ({
       return;
     }
   }, [isAdmin, navigate]);
+
+  // CORREÇÃO: Verificar se os dados são arrays válidos
+  const artigosArray = Array.isArray(artigos) ? artigos : [];
+  const eventosArray = Array.isArray(eventos) ? eventos : [];
+  const edicoesArray = Array.isArray(edicoes) ? edicoes : [];
 
   // Função para excluir artigo
   const handleDeleteArticle = async (id) => {
@@ -37,7 +42,7 @@ const AdminDashboard = ({
       }
 
       // Recarrega a lista de artigos
-      onReloadArtigos();
+      if (onReloadArtigos) onReloadArtigos();
       alert("Artigo excluído com sucesso!");
     } catch (err) {
       alert(err.message);
@@ -61,7 +66,7 @@ const AdminDashboard = ({
       }
 
       // Recarrega a lista de eventos
-      onReloadEventos();
+      if (onReloadEventos) onReloadEventos();
       alert("Evento excluído com sucesso!");
     } catch (err) {
       alert(err.message);
@@ -85,7 +90,7 @@ const AdminDashboard = ({
       }
 
       // Recarrega a lista de edições
-      onReloadEdicoes();
+      if (onReloadEdicoes) onReloadEdicoes();
       alert("Edição excluída com sucesso!");
     } catch (err) {
       alert(err.message);
@@ -109,13 +114,13 @@ const AdminDashboard = ({
             </button>
           </div>
 
-          {artigos.length === 0 ? (
+          {artigosArray.length === 0 ? (
             <div className="bg-white p-8 rounded-lg shadow text-center border border-gray-200">
               <p className="text-gray-600">Nenhum artigo cadastrado ainda.</p>
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2">
-              {artigos.map((article) => (
+              {artigosArray.map((article) => (
                 <div
                   key={article.id}
                   className="bg-white p-6 rounded-lg shadow border border-gray-200 hover:shadow-lg transition"
@@ -124,11 +129,11 @@ const AdminDashboard = ({
                     {article.titulo}
                   </h3>
                   <p className="text-sm text-gray-700 mb-1">
-                    <span className="font-semibold">Área:</span> {article.area}
+                    <span className="font-semibold">Área:</span> {article.area || "N/A"}
                   </p>
                   <p className="text-sm text-gray-700 mb-4">
                     <span className="font-semibold">Palavras-chave:</span>{" "}
-                    {article.palavras_chave}
+                    {article.palavras_chave || "N/A"}
                   </p>
 
                   <div className="flex space-x-2">
@@ -168,13 +173,13 @@ const AdminDashboard = ({
             </button>
           </div>
 
-          {eventos.length === 0 ? (
+          {eventosArray.length === 0 ? (
             <div className="bg-white p-8 rounded-lg shadow text-center border border-gray-200">
               <p className="text-gray-600">Nenhum evento cadastrado ainda.</p>
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2">
-              {eventos.map((event) => (
+              {eventosArray.map((event) => (
                 <div
                   key={event.id}
                   className="bg-white p-6 rounded-lg shadow border border-gray-200 hover:shadow-lg transition"
@@ -223,13 +228,13 @@ const AdminDashboard = ({
             </button>
           </div>
 
-          {edicoes.length === 0 ? (
+          {edicoesArray.length === 0 ? (
             <div className="bg-white p-8 rounded-lg shadow text-center border border-gray-200">
               <p className="text-gray-600">Nenhuma edição cadastrada ainda.</p>
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2">
-              {edicoes.map((edition) => (
+              {edicoesArray.map((edition) => (
                 <div
                   key={edition.id}
                   className="bg-white p-6 rounded-lg shadow border border-gray-200 hover:shadow-lg transition"
@@ -239,7 +244,7 @@ const AdminDashboard = ({
                   </h3>
                   <p className="text-sm text-gray-700 mb-2">
                     <span className="font-semibold">Evento:</span> {
-                      eventos.find(e => e.id === edition.evento_id)?.nome || `ID ${edition.evento_id}`
+                      eventosArray.find(e => e.id === edition.evento_id)?.nome || `ID ${edition.evento_id}`
                     }
                   </p>
 
