@@ -35,11 +35,43 @@ function App() {
   const navigate = useNavigate(); // <-- hook para navegação
 
   // Função para recarregar eventos
-    const reloadEventos = useCallback(() => {
+  const reloadEventos = useCallback(() => {
+    console.log("🔄 Recarregando eventos...");
+    setLoadingEventos(true);
+    
     fetch("http://localhost:8000/eventos")
-      .then(res => res.json())
-      .then(data => { setEventos(data); setLoadingEventos(false); })
-      .catch(() => setLoadingEventos(false));
+      .then(res => {
+        console.log("📡 Resposta eventos status:", res.status);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(data => { 
+        console.log("✅ Eventos carregados:", data);
+        console.log("📊 Tipo de dados:", typeof data, "É array:", Array.isArray(data));
+        console.log("📋 Primeiro evento:", data[0]);
+        
+        // Verificar se é um array direto ou se os dados estão em uma propriedade
+        let eventosArray = [];
+        if (Array.isArray(data)) {
+          eventosArray = data;
+        } else if (data && Array.isArray(data.eventos)) {
+          eventosArray = data.eventos;
+        } else if (data && Array.isArray(data.data)) {
+          eventosArray = data.data;
+        } else {
+          console.warn("⚠️ Formato de dados inesperado:", data);
+        }
+        
+        setEventos(eventosArray);
+        setLoadingEventos(false); 
+      })
+      .catch(error => {
+        console.error("❌ Erro ao carregar eventos:", error);
+        setEventos([]);
+        setLoadingEventos(false);
+      });
   }, []);
 
   const reloadEdicoes = useCallback(() => {

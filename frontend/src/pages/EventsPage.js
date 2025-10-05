@@ -1,26 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SearchIcon} from '../components/common/Icons';
+import { SearchIcon } from '../components/common/Icons';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import EventCard from '../components/cards/EventCard';
 import { useAuth } from '../components/common/AuthContext';
 
-const EventsPage = ({ data: events, loading, error, onReload }) => {
+const EventsPage = ({ data: events = [], loading, error, onReload }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
   const { isAdmin, isAuthenticated } = useAuth();
+
+  // CORREÇÃO: Verificar se events é um array válido e adicionar debug
+  console.log("🔍 EventsPage recebeu:", { events, loading, error });
+  const eventsArray = Array.isArray(events) ? events : [];
+  console.log("📊 eventsArray:", eventsArray);
 
   // Recarregar eventos quando a página carregar
   useEffect(() => {
     if (onReload) {
       onReload();
     }
-  }, [onReload]); // Incluir onReload nas dependências
+  }, [onReload]);
 
   if (loading) return <LoadingSpinner message="Carregando eventos..." />;
   if (error) return <div className="text-center py-12 text-red-600">Erro: {error}</div>;
 
-  const filteredEvents = events.filter(event => 
+  // CORREÇÃO: Usar eventsArray em vez de events
+  const filteredEvents = eventsArray.filter(event => 
     event.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     event.slug?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -32,7 +38,7 @@ const EventsPage = ({ data: events, loading, error, onReload }) => {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Eventos</h1>
             <p className="text-gray-600">
-              Conheça os {events.length} eventos acadêmicos de nossa biblioteca
+              Conheça os {eventsArray.length} eventos acadêmicos de nossa biblioteca
             </p>
           </div>
           {isAuthenticated && isAdmin() && (
@@ -70,18 +76,47 @@ const EventsPage = ({ data: events, loading, error, onReload }) => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEvents.map((event) => (
-            <EventCard key={event.id} event={event} />
-          ))}
-        </div>
-
-        {filteredEvents.length === 0 && (
+        {/* CORREÇÃO: Verificar se há eventos antes de renderizar */}
+        {eventsArray.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">
-              Nenhum evento encontrado com os critérios de busca.
+            <div className="text-gray-400 text-6xl mb-4">📅</div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Nenhum evento cadastrado
+            </h3>
+            <p className="text-gray-600">
+              Ainda não há eventos cadastrados no sistema.
             </p>
+            {isAuthenticated && isAdmin() && (
+              <button
+                onClick={() => navigate('/admin/events')}
+                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Cadastrar Primeiro Evento
+              </button>
+            )}
           </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredEvents.map((event) => (
+                <EventCard key={event.id} event={event} />
+              ))}
+            </div>
+
+            {filteredEvents.length === 0 && searchTerm && (
+              <div className="text-center py-12">
+                <p className="text-gray-500 text-lg">
+                  Nenhum evento encontrado com os critérios de busca "{searchTerm}".
+                </p>
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="mt-2 text-blue-600 hover:text-blue-800"
+                >
+                  Limpar busca
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

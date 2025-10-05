@@ -9,7 +9,6 @@ class EventoCreate(BaseModel):
     nome: str
     sigla: str  # será usado como slug
     admin_id: Optional[int] = None
-    entidade_promotora: Optional[str] = None
 
 class EventoRead(BaseModel):
     id: int
