@@ -55,7 +55,7 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r backend/requirements.txt
 ```
-
+---
 ## ⚙️ Diagrama de Sequência
 O diagrama de sequência abaixo representa o fluxo de inicialização e interação entre os componentes do sistema em ambiente Docker. O processo começa com o desenvolvedor executando o comando `docker-compose up`, o que faz com que o **Docker Engine** construa a imagem do Backend (FastAPI) e inicialize o container do **banco de dados PostgreSQL**, montando um volume persistente para armazenar os dados. Em seguida, o backend tenta estabelecer conexão com o banco de dados e, após a confirmação, executa os scripts de migração responsáveis por criar as tabelas necessárias. Com a estrutura do banco pronta, o backend passa a enviar e receber comandos SQL (como _INSERT_, _SELECT_ e _UPDATE_) para manipulação dos dados. Após a conexão ser bem-sucedida, o Docker exibe nos logs a mensagem de inicialização concluída, permitindo que o desenvolvedor acesse a API localmente via localhost:8000, com as requisições sendo processadas em tempo real pelo backend e refletidas no banco de dados.
 
@@ -146,3 +146,53 @@ graph TD
     B -.-> C1d
     C1d -. "requisições REST" .-> B1a
 ```
+---
+## Backlog de Sprint
+#### História #1. Como administrador, eu quero cadastrar (editar, deletar) um evento. (Exemplo: Simpósio Brasileiro de Engenharia de Software)
+#### Tarefas e Responsáveis:
+* Criar tela de cadastro do administrador e usário. [Adler]
+* Criar tela/formulário para registrar um evento. [Bruna]
+* Permitir editar os dados de um evento já criado. [Rafael]
+* Permitir excluir um evento que não será mais usado. [Bruna]
+* Limitar o Cadastro de Eventos a usuários administradores. [Adler]
+
+#### História #2: Como administrador, eu quero cadastrar (editar, deletar) uma nova edição de um evento (exemplo: edição de 2025 do SBES)
+#### Tarefas e Responsáveis:
+* Criar tela/formulário para registrar uma edição de um evento (ano, local, etc.). [Bruna]
+* Permitir editar os dados de uma edição já criada. [Bruna]
+* Permitir excluir uma edição que não será mais usada. [Rafael]
+* * Limitar o Cadastro de Novas Edições a usuários administradores. [Adler]
+
+#### História #3. Como administrador, eu quero cadastrar (editar, deletar) um artigo manualmente, incluindo seu pdf
+#### Tarefas e Responsáveis:
+* Criar tela/formulário para adicionar um artigo (título, autores, evento/edição, etc.). [Bruna]
+* Permitir anexar o PDF do artigo no cadastro. [Luísa]
+* Permitir editar os dados e o PDF de um artigo. [Luísa]
+* Permitir excluir um artigo. [Bruna]
+
+#### História #5. Como usuário, eu quero pesquisar por artigos: por título, por autor e por nome de evento
+#### Tarefas e Responsáveis:
+* Criar campo de busca por título, autor. [Luísa]
+* Criar campo de busca por nome de evento. [Luísa]
+* Exibir lista de artigos encontrados. [Luísa]
+
+#### História #6. Como administrador, eu quero que todo evento tenha uma home page, com suas edições; cada edição, por sua vez, também deve ter uma home page, com seus artigos. (Exemplos: simple-lib/sbes e simple-lib/sbes/2025)
+#### Tarefas e Responsáveis:
+* Criar uma página para cada evento, mostrando suas edições. [Luísa]
+* Criar uma página para cada edição, mostrando os artigos daquela edição. [Rafael]
+* O endereço da página deve ser fácil de identificar (ex: site.com/sbes ou site.com/sbes/2025). [Adler]
+
+#### História #7. Como usuário, eu quero ter uma home page com meus artigos, organizados por ano (Exemplos: simple-lib/nome-autor)	
+* Criar uma página para cada autor. [Rafael]
+* Mostrar todos os artigos daquele autor, organizados por ano. [Rafael]
+* O endereço da página deve ser fácil de identificar (ex: site.com/nome-autor). [Adler]
+
+#### História #8. Como usuário, eu quero me cadastrar para receber um mail sempre que eu tiver um novo artigo disponibilizado
+#### Tarefas e Responsáveis:
+* Permitir que o usuário se cadastre para receber emails. [Adler]
+* O sistema deve identificar quando um artigo novo do usuário for cadastrado. [Rafael]
+* O sistema deve enviar automaticamente um email notificando o usuário. [Luísa]
+
+
+
+
