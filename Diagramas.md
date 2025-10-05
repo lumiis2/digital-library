@@ -1,12 +1,5 @@
-# 📚 Digital Library
-
-Sistema completo de biblioteca digital com backend em FastAPI, frontend em React e banco de dados PostgreSQL via Docker.
-
----
-
-## ⚙️ Diagrama de Sequencia
-
-O diagrama abaixo mostra como os containers são inicializados e se comunicam:
+## ⚙️ Diagrama de Sequência
+O diagrama de sequência abaixo representa o fluxo de inicialização e interação entre os componentes do sistema em ambiente Docker. O processo começa com o desenvolvedor executando o comando `docker-compose up`, o que faz com que o **Docker Engine** construa a imagem do Backend (FastAPI) e inicialize o container do **banco de dados PostgreSQL**, montando um volume persistente para armazenar os dados. Em seguida, o backend tenta estabelecer conexão com o banco de dados e, após a confirmação, executa os scripts de migração responsáveis por criar as tabelas necessárias. Com a estrutura do banco pronta, o backend passa a enviar e receber comandos SQL (como _INSERT_, _SELECT_ e _UPDATE_) para manipulação dos dados. Após a conexão ser bem-sucedida, o Docker exibe nos logs a mensagem de inicialização concluída, permitindo que o desenvolvedor acesse a API localmente via localhost:8000, com as requisições sendo processadas em tempo real pelo backend e refletidas no banco de dados.
 
 ```mermaid
 sequenceDiagram
@@ -35,10 +28,13 @@ sequenceDiagram
     Docker-->>Dev: Mostra logs de inicialização concluída
     Dev->>BE: Acessa API via localhost:8000
     BE->>DB: Manipula requisições em tempo real
-
+````
 
 ## ⚙️ Diagrama de Pacotes
 
+O diagrama de pacotes representa o funcionamento integrado da biblioteca a qual utiliza um banco de dados em uma infraestrutura containerizada via Docker Compose. O **Backend**, desenvolvido em FastAPI, é responsável por processar as requisições da API, conectar-se ao banco de dados PostgreSQL por meio do módulo `database.py` e executar operações de criação, leitura, atualização e exclusão de dados, utilizando modelos definidos em `models.py` e validações estruturadas em `schemas.py`. O **Frontend**, construído com React e estilizado com Tailwind CSS, fornece a interface gráfica com o usuário, onde páginas como `HomePage.js` e `AdminDashboard.js` consomem dados do backend através do hook `useApi.js` e dos endpoints centralizados em `api.js`. A comunicação entre o frontend e o backend ocorre via **requisições REST**, permitindo que o cliente acesse e manipule os dados em tempo real. Por fim, a **infraestrutura Docker Compose** integra todos esses componentes — backend, frontend e banco de dados — garantindo que sejam executados de forma coordenada, isolada e portátil, o que facilita tanto o desenvolvimento quanto a implantação do sistema.
+
+```mermaid
 graph TD
     %% Estilo geral
     classDef backend fill:#fdf5e6,stroke:#b8860b,stroke-width:1px,color:#000,rx:6,ry:6;
@@ -91,3 +87,5 @@ graph TD
     %% Relacionamentos externos
     B -.-> C1d
     C1d -. "requisições REST" .-> B1a
+```
+
