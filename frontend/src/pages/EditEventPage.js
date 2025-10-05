@@ -1,4 +1,3 @@
-// src/pages/EditEventPage.js
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -7,8 +6,8 @@ const EditEventPage = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     nome: "",
-    slug: "",
-    admin_id: ""
+    sigla: "",
+    entidade_promotora: ""
   });
   const [loading, setLoading] = useState(true);
 
@@ -21,9 +20,9 @@ const EditEventPage = () => {
       })
       .then((data) => {
         setForm({
-          nome: data.nome,
-          slug: data.slug,
-          admin_id: data.admin_id || ""
+          nome: data.nome || "",
+          sigla: data.sigla || "",
+          entidade_promotora: data.entidade_promotora || ""
         });
         setLoading(false);
       })
@@ -43,8 +42,9 @@ const EditEventPage = () => {
 
     try {
       const updateData = {
-        nome: form.nome,
-        admin_id: form.admin_id ? parseInt(form.admin_id) : null
+        nome: form.nome.trim(),
+        sigla: form.sigla.trim().toUpperCase(),
+        entidade_promotora: form.entidade_promotora.trim()
       };
       
       const res = await fetch(`http://localhost:8000/eventos/${id}`, {
@@ -55,9 +55,10 @@ const EditEventPage = () => {
 
       if (!res.ok) throw new Error("Erro ao atualizar evento");
 
-      alert("Evento atualizado com sucesso!");
+      alert("✅ Evento atualizado com sucesso!");
       navigate("/admin"); // volta para dashboard admin
     } catch (err) {
+      console.error("Erro ao atualizar evento:", err);
       alert(err.message);
     }
   };
@@ -71,27 +72,36 @@ const EditEventPage = () => {
           Editar Evento
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Nome */}
           <input
             name="nome"
             placeholder="Nome do Evento"
             value={form.nome}
             onChange={handleChange}
             className="w-full border p-2 rounded"
+            required
           />
+
+          {/* Sigla */}
           <input
-            name="slug"
-            placeholder="Sigla do Evento"
-            value={form.slug}
+            name="sigla"
+            placeholder="Sigla do Evento (ex: SBES)"
+            value={form.sigla}
+            onChange={handleChange}
+            className="w-full border p-2 rounded uppercase"
+            required
+          />
+
+          {/* Entidade Promotora */}
+          <input
+            name="entidade_promotora"
+            placeholder="Entidade Promotora (ex: Sociedade Brasileira de Computação)"
+            value={form.entidade_promotora}
             onChange={handleChange}
             className="w-full border p-2 rounded"
+            required
           />
-          <input
-            name="admin_id"
-            placeholder="ID do Admin"
-            value={form.admin_id}
-            onChange={handleChange}
-            className="w-full border p-2 rounded"
-          />
+
           <button
             type="submit"
             className="w-full px-4 py-2 bg-floresta text-papel rounded hover:bg-floresta/90 font-semibold"

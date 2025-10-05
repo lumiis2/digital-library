@@ -153,8 +153,8 @@ function App() {
                 />} />
             
             {/* ROTAS ESPECÍFICAS COM PARÂMETROS - ORDEM CRÍTICA */}
-            <Route path="/eventos/:slug" element={<EventDetailPage />} />
             <Route path="/eventos/:slug/:ano" element={<EditionDetailPage />} />
+            <Route path="/eventos/:slug" element={<EventDetailPage />} />
             <Route path="/autores/:slug" element={<AuthorDetailPage />} />
             <Route path="/author/:authorId" element={<AuthorDetailPage />} />
             <Route path="/edicoes/:eventoId/:ano" element={<EditionDetailPage />} />

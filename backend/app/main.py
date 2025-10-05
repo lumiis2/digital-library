@@ -436,7 +436,7 @@ def criar_edicao(edicao: EditionCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Já existe uma edição para este evento no ano especificado")
     
     # Gerar slug para a edição
-    slug = f"{evento.slug}-{edicao.ano}"
+    slug = f"{edicao.ano}"
     
     edicao_db = Edition(ano=edicao.ano, evento_id=edicao.evento_id, slug=slug)
     db.add(edicao_db)
