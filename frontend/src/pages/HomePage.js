@@ -32,7 +32,7 @@ const HomePage = ({ onNavigate, totalArticles }) => {
 
       {/* Stats Section (transparent card-like) */}
       <div className="flex justify-center -mt-8">
-        <div className="w-full max-w-5xl bg-white/85 backdrop-blur-sm rounded-xl border border-white/30 px-6 py-4 shadow-sm">
+        <div className="w-full max-w-6xl bg-white/85 backdrop-blur-sm rounded-xl border border-white/30 px-6 py-4 shadow-sm">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
             <div>
               <div className="text-lg md:text-2xl font-medium text-azul">{totalArticles || '---'}</div>
