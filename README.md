@@ -161,7 +161,7 @@ graph TD
 * Criar tela/formulário para registrar uma edição de um evento (ano, local, etc.). [Bruna]
 * Permitir editar os dados de uma edição já criada. [Bruna]
 * Permitir excluir uma edição que não será mais usada. [Rafael]
-* * Limitar o Cadastro de Novas Edições a usuários administradores. [Adler]
+    * Limitar o Cadastro de Novas Edições a usuários administradores. [Adler]
 
 #### História #3. Como administrador, eu quero cadastrar (editar, deletar) um artigo manualmente, incluindo seu pdf
 #### Tarefas e Responsáveis:
