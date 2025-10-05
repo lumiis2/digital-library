@@ -27,7 +27,7 @@ const AdminPanel = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Gestão de Eventos */}
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
                 <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -36,16 +36,17 @@ const AdminPanel = () => {
               </div>
               <h3 className="text-xl font-semibold text-gray-800">Eventos</h3>
             </div>
-            <p className="text-gray-600 mb-4">Gerencie eventos, palestras e atividades.</p>
-            <div className="space-y-2">
-              <Link to="/admin/events" className="block w-full bg-blue-600 text-white text-center py-2 px-4 rounded hover:bg-blue-700">
-                Novo Evento
-              </Link>
-            </div>
+            <p className="text-gray-600 mb-4">Gerenciar eventos acadêmicos e suas edições</p>
+            <Link 
+              to="/admin/events/new" 
+              className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Novo Evento
+            </Link>
           </div>
 
           {/* Gestão de Artigos */}
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
                 <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -54,12 +55,18 @@ const AdminPanel = () => {
               </div>
               <h3 className="text-xl font-semibold text-gray-800">Artigos</h3>
             </div>
-            <p className="text-gray-600 mb-4">Gerencie artigos e publicações acadêmicas.</p>
+            <p className="text-gray-600 mb-4">Adicionar e gerenciar artigos acadêmicos</p>
             <div className="space-y-2">
-              <Link to="/admin/articles" className="block w-full bg-green-600 text-white text-center py-2 px-4 rounded hover:bg-green-700">
+              <Link 
+                to="/admin/articles/new" 
+                className="block bg-green-600 text-white text-center px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+              >
                 Novo Artigo
               </Link>
-              <Link to="/admin/import-bibtex" className="block w-full bg-orange-600 text-white text-center py-2 px-4 rounded hover:bg-orange-700">
+              <Link 
+                to="/admin/import-bibtex" 
+                className="block bg-purple-600 text-white text-center px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+              >
                 Importar BibTeX
               </Link>
             </div>

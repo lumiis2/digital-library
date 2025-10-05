@@ -12,6 +12,8 @@ function UserSettingsPage() {
       try {
         // Obter token do localStorage
         const token = localStorage.getItem('authToken');
+        console.log("Token encontrado:", token); // Debug
+        
         if (!token) {
           setError("Usuário não está logado");
           setLoading(false);
@@ -26,11 +28,15 @@ function UserSettingsPage() {
           }
         });
 
+        console.log("Resposta da API:", response.status); // Debug
+
         if (!response.ok) {
-          throw new Error('Erro ao carregar dados do usuário');
+          const errorData = await response.json();
+          throw new Error(errorData.detail || 'Erro ao carregar dados do usuário');
         }
 
         const userData = await response.json();
+        console.log("Dados do usuário:", userData); // Debug
         setUser(userData);
       } catch (error) {
         console.error('Erro ao carregar usuário:', error);
