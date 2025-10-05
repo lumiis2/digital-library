@@ -1,4 +1,6 @@
-#!/home/adlerf/digital-library/backend/venv/bin/python3
+#!/bin/sh
+'''exec' "/home/blms_novo/ufmg/202502/engenharia de software/digital-library/backend/venv/bin/python3" "$0" "$@"
+' '''
 # -*- coding: utf-8 -*-
 import re
 import sys
