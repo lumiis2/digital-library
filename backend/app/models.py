@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Date, Table, Index, func
 from sqlalchemy.orm import relationship
 from .database import Base
+import re, unicodedata
 
 # Tabela de associação entre artigos e autores
 artigo_autor = Table(
@@ -9,6 +10,13 @@ artigo_autor = Table(
     Column('artigo_id', Integer, ForeignKey('artigo.id'), primary_key=True),
     Column('autor_id', Integer, ForeignKey('autor.id'), primary_key=True)
 )
+
+def gerar_slug(nome, sobrenome):
+    texto = f"{nome}-{sobrenome}"
+    texto = unicodedata.normalize('NFKD', texto).encode('ascii', 'ignore').decode('ascii')
+    texto = texto.lower()
+    texto = re.sub(r'[^a-z0-9]+', '-', texto).strip('-')
+    return texto
 
 class Event(Base):
     __tablename__ = "evento"
@@ -45,6 +53,10 @@ class Author(Base):
     # Relacionamentos
     articles = relationship("Article", secondary=artigo_autor, back_populates="authors")
     notifications = relationship("Notification", back_populates="author")
+
+    def __init__(self, nome, sobrenome, **kwargs):
+        super().__init__(nome=nome, sobrenome=sobrenome, **kwargs)
+        self.slug = gerar_slug(nome, sobrenome)
 
 class Article(Base):
     __tablename__ = "artigo"
