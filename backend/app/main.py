@@ -17,6 +17,10 @@ import os
 import shutil
 import asyncio
 import bibtexparser
+import time
+import re
+import unicodedata
+import json
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -41,8 +45,8 @@ from .schemas import (
 EMAIL_CONFIG = {
     "SMTP_SERVER": "smtp.gmail.com",
     "SMTP_PORT": 587,
-    "EMAIL_FROM": "digitallibrary.test@gmail.com",
-    "EMAIL_PASSWORD": "test_password_123",
+    "EMAIL_FROM": "dldigitallibrary1@gmail.com",
+    "EMAIL_PASSWORD": "rgnk oekd wian uytf",
 }
 
 # Configurações de autenticação
@@ -55,6 +59,29 @@ ADMIN_EMAILS = {"luisalcarvalhaes@gmail.com", "outroadmin@email.com"}
 
 def sha256(s: str) -> str:
     return hashlib.sha256(s.encode("utf-8")).hexdigest()
+
+def generate_slug(text: str) -> str:
+    """Gera um slug amigável a partir de um texto"""
+    import re
+    import unicodedata
+    
+    # Normalizar unicode e remover acentos
+    text = unicodedata.normalize('NFD', text)
+    text = text.encode('ascii', 'ignore').decode('ascii')
+    
+    # Converter para minúsculo
+    text = text.lower()
+    
+    # Substituir espaços e caracteres especiais por hífens
+    text = re.sub(r'[^a-z0-9]+', '-', text)
+    
+    # Remover hífens no início e fim
+    text = text.strip('-')
+    
+    # Limitar tamanho
+    text = text[:50]
+    
+    return text
 
 def get_db():
     """Dependência de sessão do banco de dados"""
@@ -108,30 +135,98 @@ async def send_notification_email(to_email: str, author_name: str, article_title
 async def enviar_notificacao_novo_artigo(article_id: int, db: Session):
     """Envia notificação por email quando um novo artigo é publicado"""
     try:
+        print(f"🔔 Iniciando notificações para artigo ID: {article_id}")
+        
         # Buscar o artigo
         article = db.query(Article).filter(Article.id == article_id).first()
         if not article:
+            print(f"❌ Artigo {article_id} não encontrado")
             return
+        
+        print(f"📄 Artigo encontrado: {article.titulo}")
         
         # Buscar autores do artigo
         for author in article.authors:
+            print(f"👤 Processando autor: {author.nome} {author.sobrenome} (ID: {author.id})")
+            
             # 1. Verificar se o próprio autor é um usuário cadastrado
             user_author = db.query(User).filter(
-                (User.nome.ilike(f"%{author.nome}%")) & 
-                (User.receive_notifications == 1)
+                User.nome.ilike(f"%{author.nome}%"),
+                User.receive_notifications == 1
             ).first()
             
             if user_author:
-                # Verificar se já enviou email para este artigo/usuário
-                email_sent = db.query(EmailLog).filter(
-                    (EmailLog.user_id == user_author.id) & (EmailLog.article_id == article.id)
+                print(f"✅ Autor é usuário cadastrado: {user_author.email}")
+                
+                # Verificar se já enviou email para este artigo/usuário (remover para permitir reenvios)
+                # Comentando esta verificação para permitir envios
+                # email_sent = db.query(EmailLog).filter(
+                #     (EmailLog.user_id == user_author.id) & (EmailLog.article_id == article.id)
+                # ).first()
+                
+                # if not email_sent:
+                try:
+                    print(f"📧 Enviando email para o próprio autor: {user_author.email}")
+                    await send_notification_email(
+                        str(user_author.email), 
+                        f"{str(author.nome)} {str(author.sobrenome)}", 
+                        str(article.titulo), 
+                        str(article.edition.event.nome) if article.edition and article.edition.event else "Evento"
+                    )
+                    
+                    # Registrar envio
+                    log = EmailLog(
+                        user_id=user_author.id,
+                        article_id=article.id,
+                        author_id=author.id,
+                        sent_at=date.today(),
+                        email_subject=f"Novo artigo: {str(article.titulo)}",
+                        status="sent"
+                    )
+                    db.add(log)
+                    print(f"✅ Email enviado para autor: {user_author.email}")
+                    
+                except Exception as e:
+                    print(f"❌ Erro ao enviar email para autor {user_author.email}: {e}")
+                    # Registrar falha
+                    log = EmailLog(
+                        user_id=user_author.id,
+                        article_id=article.id,
+                        author_id=author.id,
+                        sent_at=date.today(),
+                        email_subject=f"Novo artigo: {str(article.titulo)}",
+                        status="failed"
+                    )
+                    db.add(log)
+            
+            # 2. Buscar usuários que seguem este autor
+            notifications = db.query(Notification).filter(
+                Notification.author_id == author.id,
+                Notification.is_active == 1
+            ).all()
+            
+            print(f"🔔 Encontradas {len(notifications)} notificações ativas para o autor {author.nome}")
+            
+            for notification in notifications:
+                user = db.query(User).filter(
+                    User.id == notification.user_id,
+                    User.receive_notifications == 1
                 ).first()
                 
-                if not email_sent:
-                    # Enviar email para o próprio autor
+                if user:
+                    print(f"👤 Usuário seguidor encontrado: {user.nome} ({user.email})")
+                    
+                    # Verificar se já enviou email para este artigo/usuário (remover para permitir reenvios)
+                    # Comentando esta verificação para permitir envios
+                    # email_sent = db.query(EmailLog).filter(
+                    #     (EmailLog.user_id == user.id) & (EmailLog.article_id == article.id)
+                    # ).first()
+                    
+                    # if not email_sent:
                     try:
+                        print(f"📧 Enviando email para seguidor: {user.email}")
                         await send_notification_email(
-                            str(user_author.email), 
+                            str(user.email), 
                             f"{str(author.nome)} {str(author.sobrenome)}", 
                             str(article.titulo), 
                             str(article.edition.event.nome) if article.edition and article.edition.event else "Evento"
@@ -139,82 +234,39 @@ async def enviar_notificacao_novo_artigo(article_id: int, db: Session):
                         
                         # Registrar envio
                         log = EmailLog(
-                            user_id=user_author.id,
+                            user_id=user.id,
                             article_id=article.id,
                             author_id=author.id,
                             sent_at=date.today(),
-                            email_subject=f"Novo artigo: {str(article.titulo)}",
+                            email_subject=f"Novo artigo de {author.nome}: {str(article.titulo)}",
                             status="sent"
                         )
                         db.add(log)
+                        print(f"✅ Email enviado para seguidor: {user.email}")
                         
                     except Exception as e:
+                        print(f"❌ Erro ao enviar email para seguidor {user.email}: {e}")
                         # Registrar falha
                         log = EmailLog(
-                            user_id=user_author.id,
+                            user_id=user.id,
                             article_id=article.id,
                             author_id=author.id,
                             sent_at=date.today(),
-                            email_subject=f"Novo artigo: {str(article.titulo)}",
+                            email_subject=f"Novo artigo de {author.nome}: {str(article.titulo)}",
                             status="failed"
                         )
                         db.add(log)
-                        print(f"Erro ao enviar email para {str(user_author.email)}: {e}")
-            
-            # 2. Buscar usuários que seguem este autor
-            notifications = db.query(Notification).filter(
-                (Notification.author_id == author.id) & (Notification.is_active == 1)
-            ).all()
-            
-            for notification in notifications:
-                user = db.query(User).filter(
-                    (User.id == notification.user_id) & (User.receive_notifications == 1)
-                ).first()
-                
-                if user:
-                    # Verificar se já enviou email para este artigo/usuário
-                    email_sent = db.query(EmailLog).filter(
-                        (EmailLog.user_id == user.id) & (EmailLog.article_id == article.id)
-                    ).first()
-                    
-                    if not email_sent:
-                        # Enviar email
-                        try:
-                            await send_notification_email(
-                                str(user.email), 
-                                f"{str(author.nome)} {str(author.sobrenome)}", 
-                                str(article.titulo), 
-                                str(article.edition.event.nome) if article.edition and article.edition.event else "Evento"
-                            )
-                            
-                            # Registrar envio
-                            log = EmailLog(
-                                user_id=user.id,
-                                article_id=article.id,
-                                author_id=author.id,
-                                sent_at=date.today(),
-                                email_subject=f"Novo artigo: {str(article.titulo)}",
-                                status="sent"
-                            )
-                            db.add(log)
-                            
-                        except Exception as e:
-                            # Registrar falha
-                            log = EmailLog(
-                                user_id=user.id,
-                                article_id=article.id,
-                                author_id=author.id,
-                                sent_at=date.today(),
-                                email_subject=f"Novo artigo: {str(article.titulo)}",
-                                status="failed"
-                            )
-                            db.add(log)
-                            print(f"Erro ao enviar email para {str(user.email)}: {e}")
+                else:
+                    print(f"❌ Usuário ID {notification.user_id} não encontrado ou com notificações desabilitadas")
         
         db.commit()
+        print(f"✅ Processamento de notificações concluído para artigo {article_id}")
         
     except Exception as e:
-        print(f"Erro no sistema de notificação: {e}")
+        print(f"❌ Erro no sistema de notificação: {e}")
+        import traceback
+        traceback.print_exc()
+
 
 # =====================================================================
 # CONFIGURAÇÃO DA APLICAÇÃO
@@ -506,29 +558,124 @@ def listar_artigos_do_autor(slug: str, db: Session = Depends(get_db)):
 # =====================================================================
 
 @app.post("/artigos", response_model=ArticleRead)
-async def criar_artigo(artigo: ArticleCreate, db: Session = Depends(get_db)):
-    novo_artigo = Article(
-        titulo=artigo.titulo,
-        pdf_path=artigo.pdf_path,
-        area=artigo.area,
-        palavras_chave=artigo.palavras_chave,
-        edicao_id=artigo.edicao_id
-    )
-    db.add(novo_artigo)
-    db.commit()
-    db.refresh(novo_artigo)
-
-    # Relacionar autores
-    if artigo.author_ids:
-        autores = db.query(Author).filter(Author.id.in_(artigo.author_ids)).all()
-        novo_artigo.authors = autores
-        db.commit()
-        db.refresh(novo_artigo)
+async def create_artigo(
+    titulo: str = Form(...),
+    area: str = Form(None),
+    palavras_chave: str = Form(None),
+    edicao_id: int = Form(...),
+    autores: str = Form(...),  # JSON string com lista de autores
+    pdf_file: UploadFile = File(None),
+    db: Session = Depends(get_db)
+):
+    try:
+        # Parse da lista de autores
+        import json
+        autores_data = json.loads(autores)
         
-        # Enviar notificações automaticamente após criar o artigo
-        await enviar_notificacao_novo_artigo(novo_artigo.id, db)
+        # Processar upload do PDF se fornecido
+        pdf_path = None
+        if pdf_file and pdf_file.filename:
+            # Criar nome único para o arquivo
+            timestamp = str(int(time.time()))
+            file_extension = os.path.splitext(pdf_file.filename)[1]
+            unique_filename = f"{timestamp}_{pdf_file.filename}"
+            
+            # Salvar arquivo
+            uploads_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")
+            os.makedirs(uploads_dir, exist_ok=True)
+            file_path = os.path.join(uploads_dir, unique_filename)
+            
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(pdf_file.file, buffer)
+            
+            pdf_path = f"/uploads/{unique_filename}"
+        
+        # Criar o artigo
+        db_artigo = Article(
+            titulo=titulo,
+            pdf_path=pdf_path,
+            area=area,
+            palavras_chave=palavras_chave,
+            edicao_id=edicao_id
+        )
+        db.add(db_artigo)
+        db.flush()  # Para obter o ID do artigo
+        
+        # Processar autores
+        for autor_data in autores_data:
+            nome = autor_data.get('nome', '').strip()
+            sobrenome = autor_data.get('sobrenome', '').strip()
+            
+            if not nome or not sobrenome:
+                continue
+            
+            # CORREÇÃO: Procurar autor existente em vez de impedir reutilização
+            existing_author = db.query(Author).filter(
+                Author.nome == nome,
+                Author.sobrenome == sobrenome
+            ).first()
+            
+            if existing_author:
+                # Usar autor existente
+                autor_id = existing_author.id
+                print(f"Reutilizando autor existente: {nome} {sobrenome} (ID: {autor_id})")
+            else:
+                # Criar novo autor
+                slug = generate_slug(f"{nome} {sobrenome}")
+                
+                # Verificar se o slug já existe e torná-lo único
+                base_slug = slug
+                counter = 1
+                while db.query(Author).filter(Author.slug == slug).first():
+                    slug = f"{base_slug}-{counter}"
+                    counter += 1
+                
+                new_author = Author(
+                    nome=nome,
+                    sobrenome=sobrenome,
+                    slug=slug
+                )
+                db.add(new_author)
+                db.flush()
+                autor_id = new_author.id
+                print(f"Criado novo autor: {nome} {sobrenome} (ID: {autor_id})")
+            
+            # Verificar se a associação já existe para evitar duplicatas
+            existing_association = db.query(artigo_autor).filter(
+                artigo_autor.c.artigo_id == db_artigo.id,
+                artigo_autor.c.autor_id == autor_id
+            ).first()
+            
+            if not existing_association:
+                # Criar associação artigo-autor
+                association = artigo_autor.insert().values(
+                    artigo_id=db_artigo.id,
+                    autor_id=autor_id
+                )
+                db.execute(association)
+                print(f"Associação criada: Artigo {db_artigo.id} <-> Autor {autor_id}")
+        
+        db.commit()
+        
+        # Buscar o artigo completo com autores
+        artigo_completo = db.query(Article).filter(Article.id == db_artigo.id).first()
+        
+        # Enviar notificações para usuários que seguem os autores
+        try:
+            await enviar_notificacao_novo_artigo(db_artigo.id, db)
+        except Exception as e:
+            print(f"Erro ao enviar notificações: {e}")
+            # Não falhar a criação do artigo por causa de erro de notificação
+        
+        return artigo_completo
+        
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Formato inválido de dados dos autores")
+    except Exception as e:
+        db.rollback()
+        print(f"Erro ao criar artigo: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro interno do servidor: {str(e)}")
 
-    return novo_artigo
 
 @app.get("/artigos", response_model=list[ArticleRead])
 def listar_artigos(autor_id: int | None = None, db: Session = Depends(get_db)):
@@ -1141,11 +1288,20 @@ def parar_de_seguir_autor(user_id: int, author_id: int, db: Session = Depends(ge
     return {"message": f"Você parou de seguir {author.nome} {author.sobrenome}"}
 
 @app.post("/seguir-autor")
-def seguir_autor_auth(request: dict, db: Session = Depends(get_db)):
-    # Para simplicidade, usando user_id = 1 como padrão
-    user_id = 1
+def seguir_autor_auth(request: dict, authorization: str = Header(None), db: Session = Depends(get_db)):
+    # CORREÇÃO: Usar usuário logado em vez de fixo
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Token de autenticação necessário")
+    
+    current_user = get_current_user_from_token(authorization, db)
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Token inválido")
+    
+    user_id = current_user.id  # Usar ID do usuário logado
     author_id = request.get("autor_id")
     acao = request.get("acao")  # "seguir" ou "parar_seguir"
+    
+    print(f"🔔 Usuário {user_id} ({current_user.nome}) quer {acao} autor {author_id}")
     
     if not author_id or not acao:
         raise HTTPException(
@@ -1160,23 +1316,28 @@ def seguir_autor_auth(request: dict, db: Session = Depends(get_db)):
     
     # Verificar se já existe uma notificação
     existing_notification = db.query(Notification).filter(
-        (Notification.user_id == user_id) & (Notification.author_id == author_id)
+        Notification.user_id == user_id,
+        Notification.author_id == author_id
     ).first()
     
     if acao == "seguir":
         if existing_notification:
             # Reativar se estava desativada
             db.query(Notification).filter(
-                (Notification.user_id == user_id) & (Notification.author_id == author_id)
+                Notification.user_id == user_id,
+                Notification.author_id == author_id
             ).update({"is_active": 1})
+            print(f"✅ Reativada notificação existente")
         else:
             # Criar nova notificação
             new_notification = Notification(
                 user_id=user_id,
                 author_id=author_id,
-                is_active=1
+                is_active=1,
+                created_at=date.today()
             )
             db.add(new_notification)
+            print(f"✅ Nova notificação criada")
         
         db.commit()
         return {"mensagem": f"Você agora está seguindo {author.nome} {author.sobrenome}!"}
@@ -1185,9 +1346,11 @@ def seguir_autor_auth(request: dict, db: Session = Depends(get_db)):
         if existing_notification:
             # Desativar notificação
             db.query(Notification).filter(
-                (Notification.user_id == user_id) & (Notification.author_id == author_id)
+                Notification.user_id == user_id,
+                Notification.author_id == author_id
             ).update({"is_active": 0})
             db.commit()
+            print(f"✅ Notificação desativada")
         
         return {"mensagem": f"Você parou de seguir {author.nome} {author.sobrenome}"}
     
@@ -1198,12 +1361,20 @@ def seguir_autor_auth(request: dict, db: Session = Depends(get_db)):
         )
 
 @app.get("/autores-seguidos")
-def listar_autores_seguidos_auth(db: Session = Depends(get_db)):
-    # Para simplicidade, usando user_id = 1 como padrão
-    user_id = 1
+def listar_autores_seguidos_auth(authorization: str = Header(None), db: Session = Depends(get_db)):
+    # CORREÇÃO: Usar usuário logado em vez de fixo
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Token de autenticação necessário")
+    
+    current_user = get_current_user_from_token(authorization, db)
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Token inválido")
+    
+    user_id = current_user.id  # Usar ID do usuário logado
     
     notifications = db.query(Notification).filter(
-        (Notification.user_id == user_id) & (Notification.is_active == 1)
+        Notification.user_id == user_id,
+        Notification.is_active == 1
     ).all()
     
     autores_seguidos = []
@@ -1222,6 +1393,7 @@ def listar_autores_seguidos_auth(db: Session = Depends(get_db)):
         "total": len(autores_seguidos),
         "autores": autores_seguidos
     }
+
 
 # =====================================================================
 # ENDPOINTS ADMINISTRATIVOS
@@ -1424,3 +1596,85 @@ def get_current_user_info(authorization: str = Header(None), db: Session = Depen
         "perfil": user.perfil,
         "receive_notifications": user.receive_notifications
     }
+
+@app.post("/admin/test-notifications/{article_id}")
+async def test_notifications_for_article(article_id: int, db: Session = Depends(get_db)):
+    """Endpoint para testar notificações de um artigo específico"""
+    try:
+        print(f"🧪 Testando notificações para artigo ID: {article_id}")
+        
+        # Buscar o artigo
+        article = db.query(Article).filter(Article.id == article_id).first()
+        if not article:
+            return {"error": f"Artigo {article_id} não encontrado"}
+        
+        # Chamar função de notificação
+        await enviar_notificacao_novo_artigo(article_id, db)
+        
+        return {
+            "success": True,
+            "message": f"Notificações processadas para o artigo '{article.titulo}'",
+            "article_id": article_id,
+            "article_title": article.titulo
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Erro ao processar notificações: {str(e)}"
+        }
+
+@app.get("/admin/debug-user-notifications/{user_id}")
+def debug_user_notifications(user_id: int, db: Session = Depends(get_db)):
+    """Debug das notificações de um usuário específico"""
+    try:
+        # Buscar usuário
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return {"error": f"Usuário {user_id} não encontrado"}
+        
+        # Buscar notificações ativas
+        notifications = db.query(Notification).filter(
+            Notification.user_id == user_id,
+            Notification.is_active == 1
+        ).all()
+        
+        # Buscar logs de email
+        email_logs = db.query(EmailLog).filter(
+            EmailLog.user_id == user_id
+        ).order_by(EmailLog.sent_at.desc()).limit(5).all()
+        
+        autores_seguidos = []
+        for notif in notifications:
+            author = db.query(Author).filter(Author.id == notif.author_id).first()
+            if author:
+                autores_seguidos.append({
+                    "id": author.id,
+                    "nome": f"{author.nome} {author.sobrenome}",
+                    "seguindo_desde": str(notif.created_at)
+                })
+        
+        logs_recentes = []
+        for log in email_logs:
+            article = db.query(Article).filter(Article.id == log.article_id).first()
+            logs_recentes.append({
+                "article_title": article.titulo if article else "N/A",
+                "sent_at": str(log.sent_at),
+                "status": log.status,
+                "subject": log.email_subject
+            })
+        
+        return {
+            "user": {
+                "id": user.id,
+                "nome": user.nome,
+                "email": user.email,
+                "receive_notifications": bool(user.receive_notifications)
+            },
+            "autores_seguidos": autores_seguidos,
+            "logs_recentes": logs_recentes,
+            "total_seguindo": len(autores_seguidos)
+        }
+        
+    except Exception as e:
+        return {"error": f"Erro no debug: {str(e)}"}

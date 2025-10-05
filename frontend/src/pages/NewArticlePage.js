@@ -71,30 +71,28 @@ const NewArticlePage = ({ onReload }) => {
       const nome = nomeCompleto[0];
       const sobrenome = nomeCompleto.slice(1).join(' ') || nome; // Se só há um nome, usar como sobrenome também
 
-      // Criar autor se não existir
-      const autorPayload = { nome, sobrenome };
-      const autorRes = await fetch("http://localhost:8000/autores", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(autorPayload)
-      });
+      // Verificar se o autor já foi adicionado localmente
+      const autorJaAdicionado = autores.some(autor => 
+        autor.nome.toLowerCase() === nome.toLowerCase() && 
+        autor.sobrenome.toLowerCase() === sobrenome.toLowerCase()
+      );
 
-      if (autorRes.ok) {
-        const novoAutor = await autorRes.json();
-        setAutores(prev => [...prev, novoAutor]);
-        setForm(prev => ({ 
-          ...prev, 
-          author_ids: [...prev.author_ids, novoAutor.id] 
-        }));
-        setAutorNome("");
-      } else {
-        const errorData = await autorRes.json();
-        if (errorData.detail?.includes("mesmo nome já está inserido")) {
-          alert("Autor já existe no sistema. Tente um nome diferente ou verifique se já foi adicionado.");
-        } else {
-          alert(errorData.detail || "Erro ao criar autor");
-        }
+      if (autorJaAdicionado) {
+        alert("Este autor já foi adicionado à lista.");
+        return;
       }
+
+      // Adicionar autor apenas à lista local (não criar no backend ainda)
+      const novoAutor = {
+        id: Date.now(), // ID temporário para controle local
+        nome: nome,
+        sobrenome: sobrenome
+      };
+
+      setAutores(prev => [...prev, novoAutor]);
+      setAutorNome("");
+      
+      console.log("Autor adicionado à lista:", novoAutor);
     } catch (err) {
       console.error(err);
       alert("Erro ao adicionar autor");
@@ -113,41 +111,30 @@ const NewArticlePage = ({ onReload }) => {
     e.preventDefault();
 
     try {
-      let pdfPath = form.pdf_path;
+      // Preparar dados dos autores para o endpoint correto
+      const autoresData = autores.map(autor => ({
+        nome: autor.nome || autor.nome,
+        sobrenome: autor.sobrenome || autor.sobrenome
+      }));
 
-      // Se há um arquivo selecionado, fazer upload primeiro
+      // Criar FormData para enviar incluindo arquivo
+      const formData = new FormData();
+      formData.append('titulo', form.titulo);
+      formData.append('area', form.area || '');
+      formData.append('palavras_chave', form.palavras_chave || '');
+      formData.append('edicao_id', form.edicao_id);
+      formData.append('autores', JSON.stringify(autoresData));
+      
       if (pdfFile) {
-        const formData = new FormData();
-        formData.append('file', pdfFile);
-
-        const uploadRes = await fetch('http://localhost:8000/upload-pdf', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (uploadRes.ok) {
-          const uploadData = await uploadRes.json();
-          pdfPath = uploadData.file_path;
-        } else {
-          throw new Error('Erro ao fazer upload do PDF');
-        }
+        formData.append('pdf_file', pdfFile);
       }
-
-      // Criar ou atualizar o artigo
-      const payload = {
-        ...form,
-        pdf_path: pdfPath,
-        edicao_id: parseInt(form.edicao_id, 10),
-        author_ids: form.author_ids.length ? form.author_ids : []
-      };
 
       const url = isEditing ? `http://localhost:8000/artigos/${id}` : "http://localhost:8000/artigos";
       const method = isEditing ? "PUT" : "POST";
 
       const res = await fetch(url, {
         method: method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: formData,  // Usar FormData em vez de JSON
       });
 
       if (!res.ok) {
@@ -163,7 +150,7 @@ const NewArticlePage = ({ onReload }) => {
         onReload();
       }
       
-      navigate(isEditing ? "/dashboard" : "/my-articles");
+      navigate(isEditing ? "/dashboard" : "/admin/articles");
     } catch (err) {
       alert(err.message);
     }

@@ -152,7 +152,7 @@ function AuthorDetailPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <div className="flex items-center text-sm text-gray-500 mb-4">
-            <Link to="/authors" className="hover:text-gray-700">Autores</Link>
+            <Link to="/autores" className="hover:text-gray-700">Autores</Link>
             <span className="mx-2">›</span>
             <span className="text-gray-900">{autor.nome} {autor.sobrenome}</span>
           </div>

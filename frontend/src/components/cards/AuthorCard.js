@@ -8,8 +8,9 @@ const AuthorCard = ({ author }) => {
   const handleClick = () => {
     console.log('AuthorCard clicked, author:', author); // Debug log
     if (author && author.slug) {
-      console.log('Navigating to:', `/${author.slug}`); // Debug log
-      navigate(`/${author.slug}`);
+      // CORREÇÃO: Navegar para /autores/:slug em vez de /:slug
+      console.log('Navigating to:', `/autores/${author.slug}`); // Debug log
+      navigate(`/autores/${author.slug}`);
     } else {
       console.warn('Author has no slug:', author);
     }

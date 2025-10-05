@@ -152,15 +152,15 @@ function App() {
                   onReloadArtigos={reloadArtigos}
                 />} />
             
-            {/* ROTAS ESPECÍFICAS COM PARÂMETROS */}
+            {/* ROTAS ESPECÍFICAS COM PARÂMETROS - ORDEM CRÍTICA */}
             <Route path="/eventos/:slug" element={<EventDetailPage />} />
             <Route path="/eventos/:slug/:ano" element={<EditionDetailPage />} />
-            <Route path="/edicoes/:eventoId/:ano" element={<EditionDetailPage />} />
             <Route path="/autores/:slug" element={<AuthorDetailPage />} />
             <Route path="/author/:authorId" element={<AuthorDetailPage />} />
+            <Route path="/edicoes/:eventoId/:ano" element={<EditionDetailPage />} />
             <Route path="/editions" element={<EditionsPage data={edicoes} loading={loadingEdicoes} onReload={reloadEdicoes} />} />
             
-            {/* ROTAS DINÂMICAS POR ÚLTIMO - REMOVIDAS AS CONFLITANTES */}
+            {/* ROTAS DINÂMICAS POR ÚLTIMO - ESTAS SÃO FALLBACK */}
             <Route path="/:eventSlug/:year" element={<EditionDetailPage />} />
           </Routes>
         </div>
