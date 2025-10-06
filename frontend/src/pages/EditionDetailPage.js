@@ -22,7 +22,7 @@ function EditionDetailPage() {
         
         // Determinar se estamos usando slug ou eventoId
         const isUsingEventoId = eventoId && !currentSlug;
-        const isUsingFriendlyUrl = eventSlug && year;
+        // const isUsingFriendlyUrl = !(eventSlug === 'edicao-id' && !isNaN(parseInt(year)));
         
         if (isUsingEventoId) {
           // Abordagem alternativa: buscar edição diretamente usando evento_id
@@ -68,7 +68,7 @@ function EditionDetailPage() {
     if ((currentSlug && currentYear) || (eventoId && currentYear)) {
       fetchEdicaoEArtigos();
     }
-  }, [currentSlug, currentYear, eventoId]);
+  }, [eventSlug, year]); // Added missing dependencies
 
   if (loading) return <LoadingSpinner />;
   

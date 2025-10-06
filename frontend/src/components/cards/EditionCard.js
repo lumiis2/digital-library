@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DownloadIcon, FolderIcon } from '../common/Icons';
+import { FolderIcon } from '../common/Icons';
 
 const EditionCard = ({ edition, event }) => {
   const navigate = useNavigate();
