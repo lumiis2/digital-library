@@ -90,8 +90,8 @@ def generate_slug(text: str) -> str:
     # Remover hífens no início e fim
     text = text.strip('-')
     
-    # Limitar tamanho
-    text = text[:50]
+    # Aumentar limite de tamanho para 100 caracteres
+    text = text[:100]
     
     return text
 
@@ -366,7 +366,8 @@ def listar_eventos(db: Session = Depends(get_db)):
         print(f"🔍 DEBUG - Encontrados {len(eventos)} eventos no banco")
         
         for i, evento in enumerate(eventos):
-            print(f"🔍 DEBUG - Evento {i+1}: ID={evento.id}, Nome={evento.nome}, Slug={evento.slug}")
+            print(f"🔍 DEBUG - Evento {i+1}: ID={evento.id}, Nome={evento.nome[:50]}{'...' if len(evento.nome) > 50 else ''}")
+            print(f"🔍 DEBUG - Slug completo: '{evento.slug}' (tamanho: {len(evento.slug)})")
         
         print(f"🔍 DEBUG - Retornando {len(eventos)} eventos")
         return eventos
@@ -392,73 +393,348 @@ def obter_evento_por_slug(slug: str, db: Session = Depends(get_db)):
     return evento
 
 @app.put("/eventos/{evento_id}", response_model=EventoRead)
-def atualizar_evento(evento_id: int, evento: EventoUpdate, db: Session = Depends(get_db)):
-    evento_db = db.query(Event).filter(Event.id == evento_id).first()
-    if not evento_db:
-        raise HTTPException(status_code=404, detail="Evento não encontrado")
-    
-    if evento.nome is not None:
-        setattr(evento_db, 'nome', evento.nome)
-    if evento.admin_id is not None:
-        setattr(evento_db, 'admin_id', evento.admin_id)
-    
-    db.commit()
-    db.refresh(evento_db)
-    return evento_db
+def atualizar_evento(evento_id: int, evento_data: dict, db: Session = Depends(get_db)):
+    """Atualizar um evento específico"""
+    try:
+        print(f"🔄 Atualizando evento ID: {evento_id}")
+        print(f"📝 Dados recebidos: {evento_data}")
+        
+        # Buscar evento existente
+        evento_db = db.query(Event).filter(Event.id == evento_id).first()
+        if not evento_db:
+            print(f"❌ Evento {evento_id} não encontrado")
+            raise HTTPException(status_code=404, detail="Evento não encontrado")
+        
+        print(f"📄 Evento encontrado: {evento_db.nome}")
+        
+        # Atualizar campos se fornecidos
+        if 'nome' in evento_data and evento_data['nome']:
+            evento_db.nome = evento_data['nome'].strip()
+            print(f"✅ Nome atualizado para: {evento_db.nome}")
+        
+        if 'sigla' in evento_data and evento_data['sigla']:
+            nova_sigla = evento_data['sigla'].strip().lower()
+            
+            # Verificar se a nova sigla já existe em outro evento
+            evento_existente = db.query(Event).filter(
+                Event.slug == nova_sigla,
+                Event.id != evento_id  # Excluir o próprio evento
+            ).first()
+            
+            if evento_existente:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Já existe outro evento com a sigla '{nova_sigla}'"
+                )
+            
+            evento_db.slug = nova_sigla
+            print(f"✅ Sigla atualizada para: {evento_db.slug}")
+        
+        if 'admin_id' in evento_data and evento_data['admin_id']:
+            evento_db.admin_id = evento_data['admin_id']
+            print(f"✅ Admin ID atualizado para: {evento_db.admin_id}")
+        
+        db.commit()
+        db.refresh(evento_db)
+        
+        print(f"✅ Evento {evento_id} atualizado com sucesso")
+        return evento_db
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Erro ao atualizar evento {evento_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro interno do servidor: {str(e)}")
 
 @app.delete("/eventos/{evento_id}")
 def deletar_evento(evento_id: int, db: Session = Depends(get_db)):
-    evento_db = db.query(Event).filter(Event.id == evento_id).first()
-    if not evento_db:
-        raise HTTPException(status_code=404, detail="Evento não encontrado")
-    
-    db.delete(evento_db)
-    db.commit()
-    return {"message": "Evento deletado com sucesso"}
+    """
+    Deletar evento apenas se não houver artigos vinculados.
+    Verifica se há artigos publicados em qualquer edição do evento.
+    """
+    try:
+        print(f"🗑️ Tentando deletar evento ID: {evento_id}")
+        
+        # Buscar o evento
+        evento_db = db.query(Event).filter(Event.id == evento_id).first()
+        if not evento_db:
+            print(f"❌ Evento {evento_id} não encontrado")
+            raise HTTPException(status_code=404, detail="Evento não encontrado")
+        
+        print(f"📅 Evento encontrado: {evento_db.nome}")
+        
+        # Buscar todas as edições do evento
+        edicoes = db.query(Edition).filter(Edition.evento_id == evento_id).all()
+        print(f"📊 Encontradas {len(edicoes)} edições vinculadas ao evento")
+        
+        # Verificar se há artigos em qualquer edição deste evento
+        total_artigos = 0
+        detalhes_edicoes = []
+        
+        for edicao in edicoes:
+            artigos_count = db.query(Article).filter(Article.edicao_id == edicao.id).count()
+            total_artigos += artigos_count
+            
+            if artigos_count > 0:  # Só incluir edições que têm artigos
+                detalhes_edicoes.append({
+                    "ano": edicao.ano,
+                    "edicao_id": edicao.id,
+                    "artigos": artigos_count
+                })
+            
+            print(f"📄 Edição {edicao.ano}: {artigos_count} artigos")
+        
+        print(f"📝 Total de artigos vinculados ao evento: {total_artigos}")
+        
+        # Se há artigos, impedir exclusão
+        if total_artigos > 0:
+            print(f"❌ Exclusão impedida: evento tem {total_artigos} artigos")
+            
+            raise HTTPException(
+                status_code=400, 
+                detail={
+                    "error": "Não é possível excluir o evento",
+                    "motivo": "Há artigos científicos publicados neste evento",
+                    "evento": {
+                        "id": evento_db.id,
+                        "nome": evento_db.nome,
+                        "slug": evento_db.slug
+                    },
+                    "estatisticas": {
+                        "total_edicoes": len(edicoes),
+                        "edicoes_com_artigos": len(detalhes_edicoes),
+                        "total_artigos": total_artigos
+                    },
+                    "detalhes_edicoes": detalhes_edicoes,
+                    "sugestao": "Para excluir este evento, é necessário primeiro excluir todos os artigos de suas edições.",
+                    "passos_recomendados": [
+                        "1. Acesse cada edição do evento no dashboard",
+                        "2. Exclua todos os artigos de cada edição",
+                        "3. Exclua as edições vazias",
+                        "4. Finalmente, exclua o evento"
+                    ],
+                    "alternativa": "Considere manter o evento para preservar o histórico científico"
+                }
+            )
+        
+        # Se não há artigos, verificar se há edições vazias
+        if edicoes:
+            print(f"🗑️ Deletando {len(edicoes)} edições vazias primeiro...")
+            for edicao in edicoes:
+                db.delete(edicao)
+            print(f"✅ Edições vazias deletadas")
+        
+        # Agora pode deletar o evento
+        print(f"🗑️ Deletando evento sem artigos vinculados...")
+        db.delete(evento_db)
+        db.commit()
+        
+        print(f"✅ Evento {evento_id} deletado com sucesso")
+        return {
+            "message": f"Evento '{evento_db.nome}' deletado com sucesso",
+            "detalhes": {
+                "evento_deletado": evento_db.nome,
+                "edicoes_deletadas": len(edicoes),
+                "artigos_preservados": 0
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Erro ao deletar evento {evento_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro interno do servidor: {str(e)}")
 
 # =====================================================================
 # ENDPOINTS DE EDIÇÕES
 # =====================================================================
 
 @app.post("/edicoes", response_model=EditionRead)
-def criar_edicao(edicao: EditionCreate, db: Session = Depends(get_db)):
-    # Verificar se o evento existe
-    evento = db.query(Event).filter(Event.id == edicao.evento_id).first()
-    if not evento:
-        raise HTTPException(status_code=404, detail="Evento não encontrado")
-    
-    # Verificar se já existe uma edição para esse evento no mesmo ano
-    edicao_existente = db.query(Edition).filter(
-        Edition.evento_id == edicao.evento_id,
-        Edition.ano == edicao.ano
-    ).first()
-    if edicao_existente:
-        raise HTTPException(status_code=400, detail="Já existe uma edição para este evento no ano especificado")
-    
-    # Gerar slug para a edição
-    slug = f"{edicao.ano}"
-    
-    edicao_db = Edition(ano=edicao.ano, evento_id=edicao.evento_id, slug=slug)
-    db.add(edicao_db)
-    db.commit()
-    db.refresh(edicao_db)
-    return edicao_db
+def criar_edicao(edicao_data: dict, db: Session = Depends(get_db)):
+    """Criar uma nova edição com todos os campos"""
+    try:
+        print(f"🆕 Criando nova edição")
+        print(f"📝 Dados recebidos: {edicao_data}")
+        
+        # Verificar campos obrigatórios
+        if not edicao_data.get('evento_id'):
+            raise HTTPException(status_code=400, detail="evento_id é obrigatório")
+        if not edicao_data.get('ano'):
+            raise HTTPException(status_code=400, detail="ano é obrigatório")
+        
+        evento_id = int(edicao_data['evento_id'])
+        ano = int(edicao_data['ano'])
+        
+        # Verificar se o evento existe
+        evento = db.query(Event).filter(Event.id == evento_id).first()
+        if not evento:
+            raise HTTPException(status_code=404, detail="Evento não encontrado")
+        
+        # Verificar se já existe uma edição para esse evento no mesmo ano
+        edicao_existente = db.query(Edition).filter(
+            Edition.evento_id == evento_id,
+            Edition.ano == ano
+        ).first()
+        if edicao_existente:
+            raise HTTPException(status_code=400, detail="Já existe uma edição para este evento no ano especificado")
+        
+        # Gerar slug para a edição
+        slug = f"{evento.slug}-{ano}"
+        
+        # Criar edição com todos os campos
+        edicao_db = Edition(
+            ano=ano,
+            evento_id=evento_id,
+            slug=slug,
+            descricao=edicao_data.get('descricao', ''),
+            data_inicio=edicao_data.get('data_inicio'),
+            data_fim=edicao_data.get('data_fim'),
+            local=edicao_data.get('local', ''),
+            site_url=edicao_data.get('site_url', '')
+        )
+        
+        db.add(edicao_db)
+        db.commit()
+        db.refresh(edicao_db)
+        
+        print(f"✅ Edição criada com sucesso: {edicao_db.slug}")
+        return edicao_db
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Erro ao criar edição: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro interno do servidor: {str(e)}")
 
 @app.get("/edicoes", response_model=list[EditionRead])
 def listar_edicoes(db: Session = Depends(get_db)):
     return db.query(Edition).all()
 
+@app.get("/edicoes/{edicao_id}", response_model=EditionRead)
+def obter_edicao_por_id(edicao_id: int, db: Session = Depends(get_db)):
+    """Buscar uma edição específica por ID"""
+    try:
+        print(f"🔍 Buscando edição ID: {edicao_id}")
+        
+        edicao = db.query(Edition).filter(Edition.id == edicao_id).first()
+        if not edicao:
+            print(f"❌ Edição {edicao_id} não encontrada")
+            raise HTTPException(status_code=404, detail="Edição não encontrada")
+        
+        print(f"✅ Edição encontrada: {edicao.ano} (Evento ID: {edicao.evento_id})")
+        return edicao
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Erro ao buscar edição {edicao_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
 @app.put("/edicoes/{edicao_id}", response_model=EditionRead)
-def atualizar_edicao(edicao_id: int, edicao: EditionCreate, db: Session = Depends(get_db)):
-    edicao_db = db.query(Edition).filter(Edition.id == edicao_id).first()
-    if not edicao_db:
-        raise HTTPException(status_code=404, detail="Edição não encontrada")
-    
-    setattr(edicao_db, 'ano', edicao.ano)
-    setattr(edicao_db, 'evento_id', edicao.evento_id)
-    db.commit()
-    db.refresh(edicao_db)
-    return edicao_db
+def atualizar_edicao(edicao_id: int, edicao_data: dict, db: Session = Depends(get_db)):
+    """Atualizar uma edição específica"""
+    try:
+        print(f"🔄 Atualizando edição ID: {edicao_id}")
+        print(f"📝 Dados recebidos: {edicao_data}")
+        
+        # Buscar edição existente
+        edicao_db = db.query(Edition).filter(Edition.id == edicao_id).first()
+        if not edicao_db:
+            print(f"❌ Edição {edicao_id} não encontrada")
+            raise HTTPException(status_code=404, detail="Edição não encontrada")
+        
+        print(f"📄 Edição encontrada: {edicao_db.ano} (Evento ID: {edicao_db.evento_id})")
+        
+        # Atualizar campos se fornecidos
+        if 'ano' in edicao_data and edicao_data['ano']:
+            novo_ano = int(edicao_data['ano'])
+            
+            # Verificar se já existe uma edição para o mesmo evento no novo ano
+            if novo_ano != edicao_db.ano:  # Só verificar se mudou o ano
+                edicao_existente = db.query(Edition).filter(
+                    Edition.evento_id == edicao_db.evento_id,
+                    Edition.ano == novo_ano,
+                    Edition.id != edicao_id  # Excluir a própria edição
+                ).first()
+                
+                if edicao_existente:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Já existe uma edição para este evento no ano {novo_ano}"
+                    )
+            
+            edicao_db.ano = novo_ano
+            print(f"✅ Ano atualizado para: {edicao_db.ano}")
+        
+        if 'evento_id' in edicao_data and edicao_data['evento_id']:
+            novo_evento_id = int(edicao_data['evento_id'])
+            
+            # Verificar se o evento existe
+            evento = db.query(Event).filter(Event.id == novo_evento_id).first()
+            if not evento:
+                raise HTTPException(status_code=404, detail="Evento não encontrado")
+            
+            # Verificar se já existe uma edição para o novo evento no mesmo ano
+            if novo_evento_id != edicao_db.evento_id:  # Só verificar se mudou o evento
+                edicao_existente = db.query(Edition).filter(
+                    Edition.evento_id == novo_evento_id,
+                    Edition.ano == edicao_db.ano,
+                    Edition.id != edicao_id  # Excluir a própria edição
+                ).first()
+                
+                if edicao_existente:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Já existe uma edição para o evento selecionado no ano {edicao_db.ano}"
+                    )
+            
+            edicao_db.evento_id = novo_evento_id
+            print(f"✅ Evento ID atualizado para: {edicao_db.evento_id}")
+        
+        # Atualizar o slug se ano ou evento mudaram
+        if 'ano' in edicao_data or 'evento_id' in edicao_data:
+            evento = db.query(Event).filter(Event.id == edicao_db.evento_id).first()
+            if evento:
+                novo_slug = f"{evento.slug}-{edicao_db.ano}"
+                edicao_db.slug = novo_slug
+                print(f"✅ Slug atualizado para: {edicao_db.slug}")
+        
+        # Atualizar campos adicionais
+        if 'descricao' in edicao_data:
+            edicao_db.descricao = edicao_data['descricao'] or ''
+            print(f"✅ Descrição atualizada")
+        
+        if 'data_inicio' in edicao_data:
+            edicao_db.data_inicio = edicao_data['data_inicio']
+            print(f"✅ Data início atualizada: {edicao_db.data_inicio}")
+        
+        if 'data_fim' in edicao_data:
+            edicao_db.data_fim = edicao_data['data_fim']
+            print(f"✅ Data fim atualizada: {edicao_db.data_fim}")
+        
+        if 'local' in edicao_data:
+            edicao_db.local = edicao_data['local'] or ''
+            print(f"✅ Local atualizado: {edicao_db.local}")
+        
+        if 'site_url' in edicao_data:
+            edicao_db.site_url = edicao_data['site_url'] or ''
+            print(f"✅ Site URL atualizado: {edicao_db.site_url}")
+        
+        db.commit()
+        db.refresh(edicao_db)
+        
+        print(f"✅ Edição {edicao_id} atualizada com sucesso")
+        return edicao_db
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Erro ao atualizar edição {edicao_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro interno do servidor: {str(e)}")
 
 @app.delete("/edicoes/{edicao_id}")
 def deletar_edicao(edicao_id: int, db: Session = Depends(get_db)):
@@ -480,13 +756,33 @@ def listar_edicoes_do_evento(evento_slug: str, db: Session = Depends(get_db)):
 
 @app.get("/eventos/{evento_slug}/{ano}", response_model=EditionRead)
 def obter_edicao_por_slug_e_ano(evento_slug: str, ano: int, db: Session = Depends(get_db)):
-    evento = db.query(Event).filter(Event.slug == evento_slug).first()
-    if not evento:
-        raise HTTPException(status_code=404, detail="Evento não encontrado")
-    edicao = db.query(Edition).filter(Edition.evento_id == evento.id, Edition.ano == ano).first()
-    if not edicao:
-        raise HTTPException(status_code=404, detail="Edição não encontrada")
-    return edicao
+    """Buscar edição completa por slug do evento e ano"""
+    try:
+        print(f"🔍 Buscando edição: {evento_slug}/{ano}")
+        
+        evento = db.query(Event).filter(Event.slug == evento_slug).first()
+        if not evento:
+            print(f"❌ Evento '{evento_slug}' não encontrado")
+            raise HTTPException(status_code=404, detail="Evento não encontrado")
+        
+        edicao = db.query(Edition).filter(
+            Edition.evento_id == evento.id, 
+            Edition.ano == ano
+        ).first()
+        if not edicao:
+            print(f"❌ Edição {ano} do evento '{evento_slug}' não encontrada")
+            raise HTTPException(status_code=404, detail="Edição não encontrada")
+        
+        print(f"✅ Edição encontrada: {edicao.slug}")
+        print(f"📊 Dados da edição: desc={edicao.descricao}, local={edicao.local}")
+        
+        return edicao
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Erro ao buscar edição: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 @app.get("/eventos/{evento_slug}/{ano}/artigos", response_model=list[ArticleRead])
 def listar_artigos_da_edicao(evento_slug: str, ano: int, db: Session = Depends(get_db)):
@@ -778,15 +1074,161 @@ async def atualizar_artigo(artigo_id: int, artigo: ArticleCreate, db: Session = 
     db.refresh(artigo_existente)
     return artigo_existente
 
+@app.put("/artigos/{artigo_id}/form")
+async def atualizar_artigo_form(
+    artigo_id: int,
+    titulo: str = Form(...),
+    area: str = Form(None),
+    palavras_chave: str = Form(None),
+    edicao_id: int = Form(...),
+    autores: str = Form(...),
+    pdf_file: UploadFile = File(None),
+    db: Session = Depends(get_db)
+):
+    """Endpoint específico para atualizar artigo via FormData"""
+    try:
+        print(f"🔄 Atualizando artigo ID: {artigo_id}")
+        
+        # Buscar artigo existente
+        artigo_existente = db.query(Article).filter(Article.id == artigo_id).first()
+        if not artigo_existente:
+            raise HTTPException(status_code=404, detail="Artigo não encontrado")
+        
+        # Parse da lista de autores
+        import json
+        autores_data = json.loads(autores)
+        
+        # Processar upload do PDF se fornecido
+        pdf_path = artigo_existente.pdf_path  # Manter o PDF existente se não houver novo
+        if pdf_file and pdf_file.filename:
+            # Criar nome único para o arquivo
+            timestamp = str(int(time.time()))
+            file_extension = os.path.splitext(pdf_file.filename)[1]
+            unique_filename = f"{timestamp}_{pdf_file.filename}"
+            
+            # Salvar arquivo
+            uploads_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")
+            os.makedirs(uploads_dir, exist_ok=True)
+            file_path = os.path.join(uploads_dir, unique_filename)
+            
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(pdf_file.file, buffer)
+            
+            pdf_path = f"/uploads/{unique_filename}"
+        
+        # Atualizar dados do artigo
+        artigo_existente.titulo = titulo
+        artigo_existente.area = area
+        artigo_existente.palavras_chave = palavras_chave
+        artigo_existente.edicao_id = edicao_id
+        artigo_existente.pdf_path = pdf_path
+        
+        # Limpar autores existentes
+        artigo_existente.authors = []
+        db.flush()
+        
+        # Processar novos autores
+        for autor_data in autores_data:
+            nome = autor_data.get('nome', '').strip()
+            sobrenome = autor_data.get('sobrenome', '').strip()
+            
+            if not nome or not sobrenome:
+                continue
+            
+            # Procurar autor existente
+            existing_author = db.query(Author).filter(
+                Author.nome == nome,
+                Author.sobrenome == sobrenome
+            ).first()
+            
+            if existing_author:
+                artigo_existente.authors.append(existing_author)
+                print(f"Reutilizando autor existente: {nome} {sobrenome}")
+            else:
+                # Criar novo autor
+                slug = generate_slug(f"{nome} {sobrenome}")
+                
+                # Verificar se o slug já existe e torná-lo único
+                base_slug = slug
+                counter = 1
+                while db.query(Author).filter(Author.slug == slug).first():
+                    slug = f"{base_slug}-{counter}"
+                    counter += 1
+                
+                new_author = Author(
+                    nome=nome,
+                    sobrenome=sobrenome,
+                    slug=slug
+                )
+                db.add(new_author)
+                db.flush()
+                artigo_existente.authors.append(new_author)
+                print(f"Criado novo autor: {nome} {sobrenome}")
+        
+        db.commit()
+        db.refresh(artigo_existente)
+        
+        print(f"✅ Artigo {artigo_id} atualizado com sucesso")
+        return artigo_existente
+        
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Formato inválido de dados dos autores")
+    except Exception as e:
+        db.rollback()
+        print(f"Erro ao atualizar artigo: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro interno do servidor: {str(e)}")
+
 @app.delete("/artigos/{artigo_id}")
 def deletar_artigo(artigo_id: int, db: Session = Depends(get_db)):
-    artigo_db = db.query(Article).filter(Article.id == artigo_id).first()
-    if not artigo_db:
-        raise HTTPException(status_code=404, detail="Artigo não encontrado")
-    
-    db.delete(artigo_db)
-    db.commit()
-    return {"message": "Artigo deletado com sucesso"}
+    """Deletar um artigo específico"""
+    try:
+        print(f"🗑️ Tentando deletar artigo ID: {artigo_id}")
+        
+        # Buscar o artigo
+        artigo_db = db.query(Article).filter(Article.id == artigo_id).first()
+        if not artigo_db:
+            print(f"❌ Artigo {artigo_id} não encontrado")
+            raise HTTPException(status_code=404, detail="Artigo não encontrado")
+        
+        print(f"📄 Artigo encontrado: {artigo_db.titulo}")
+        
+        # Deletar arquivo PDF se existir
+        if artigo_db.pdf_path:
+            try:
+                # Remover "/uploads/" do início do path
+                filename = artigo_db.pdf_path.replace("/uploads/", "")
+                uploads_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")
+                file_path = os.path.join(uploads_dir, filename)
+                
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                    print(f"🗑️ Arquivo PDF deletado: {file_path}")
+                else:
+                    print(f"⚠️ Arquivo PDF não encontrado: {file_path}")
+            except Exception as e:
+                print(f"⚠️ Erro ao deletar arquivo PDF: {e}")
+                # Continuar mesmo se não conseguir deletar o arquivo
+        
+        # As associações artigo-autor serão deletadas automaticamente devido ao CASCADE
+        # definido no relacionamento SQLAlchemy
+        
+        # Deletar logs de email relacionados
+        db.query(EmailLog).filter(EmailLog.article_id == artigo_id).delete()
+        print(f"🗑️ Logs de email deletados para artigo {artigo_id}")
+        
+        # Deletar o artigo
+        db.delete(artigo_db)
+        db.commit()
+        
+        print(f"✅ Artigo {artigo_id} deletado com sucesso")
+        return {"message": "Artigo deletado com sucesso"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Erro ao deletar artigo {artigo_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro interno do servidor: {str(e)}")
 
 # =====================================================================
 # ENDPOINTS DE UPLOAD
