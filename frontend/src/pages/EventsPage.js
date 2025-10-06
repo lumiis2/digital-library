@@ -34,22 +34,21 @@ const EventsPage = ({ data: events = [], loading, error, onReload }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8 flex justify-between items-start">
+        <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Eventos</h1>
             <p className="text-gray-600">
-              Conheça os {eventsArray.length} eventos acadêmicos de nossa biblioteca
+              Explore os {eventsArray.length} eventos de nossa biblioteca
             </p>
           </div>
+          
+          {/* Botão de adicionar evento - só para admins */}
           {isAuthenticated && isAdmin() && (
             <button
-              onClick={() => navigate('/admin/events')}
-              className="px-4 py-2 bg-floresta text-papel rounded-lg hover:bg-floresta/90 font-semibold transition-colors flex items-center space-x-2"
+              onClick={() => navigate("/admin/events/new")}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              <span>Cadastrar Evento</span>
+              + Novo Evento
             </button>
           )}
         </div>
@@ -88,7 +87,7 @@ const EventsPage = ({ data: events = [], loading, error, onReload }) => {
             </p>
             {isAuthenticated && isAdmin() && (
               <button
-                onClick={() => navigate('/admin/events')}
+                onClick={() => navigate('/admin/events/new')}
                 className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Cadastrar Primeiro Evento

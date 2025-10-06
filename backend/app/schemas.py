@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
 from datetime import date
-from typing import Optional
+from typing import List, Optional
 
 # ----------------------
 # Evento
@@ -26,18 +26,24 @@ class EventoUpdate(BaseModel):
 # ----------------------
 # Edição
 # ----------------------
-class EditionCreate(BaseModel):
-    evento_id: int
+class EditionBase(BaseModel):
     ano: int
+    evento_id: int
+    slug: str | None = None
+    descricao: str | None = None
+    data_inicio: date | None = None
+    data_fim: date | None = None
+    local: str | None = None
+    site_url: str | None = None
 
-class EditionRead(BaseModel):
+class EditionCreate(EditionBase):
+    pass
+
+class EditionRead(EditionBase):
     id: int
-    evento_id: int
-    ano: int
-
-    model_config = {
-        "from_attributes": True  # <- substitui orm_mode
-    }
+    
+    class Config:
+        from_attributes = True
 
 # ----------------------
 # Autor

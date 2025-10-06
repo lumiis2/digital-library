@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Date, Table, Index, func
+from sqlalchemy import Column, Integer, String, DateTime, Date, ForeignKey, Table, Text, Index, func
 from sqlalchemy.orm import relationship
 from .database import Base
 import re, unicodedata
@@ -37,8 +37,8 @@ def gerar_slug_generico(*partes):
 artigo_autor = Table(
     'artigo_autor',
     Base.metadata,
-    Column('artigo_id', Integer, ForeignKey('artigo.id'), primary_key=True),
-    Column('autor_id', Integer, ForeignKey('autor.id'), primary_key=True)
+    Column('artigo_id', Integer, ForeignKey('artigos.id'), primary_key=True),
+    Column('autor_id', Integer, ForeignKey('autores.id'), primary_key=True)
 )
 
 
@@ -46,12 +46,12 @@ artigo_autor = Table(
 # Modelo: Evento
 # -------------------------------
 class Event(Base):
-    __tablename__ = "evento"
+    __tablename__ = "eventos"
     
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String, nullable=False)
     slug = Column(String, unique=True, nullable=False)
-    admin_id = Column(Integer, ForeignKey("usuario.id"), nullable=True)
+    admin_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
     
     # Relacionamentos
     editions = relationship("Edition", back_populates="event")
@@ -59,34 +59,36 @@ class Event(Base):
 
     def __init__(self, nome, admin_id=None, **kwargs):
         super().__init__(nome=nome, admin_id=admin_id, **kwargs)
-        self.slug = gerar_slug_generico(nome)
+        if not kwargs.get('slug'):  # Só gera slug se não foi fornecido
+            self.slug = gerar_slug_generico(nome)
 
 
 # -------------------------------
 # Modelo: Edição
 # -------------------------------
 class Edition(Base):
-    __tablename__ = "edicao"
+    __tablename__ = "edicoes"
     
     id = Column(Integer, primary_key=True, index=True)
     ano = Column(Integer, nullable=False)
-    evento_id = Column(Integer, ForeignKey("evento.id"), nullable=False)
-    slug = Column(String, unique=True, nullable=False)
+    evento_id = Column(Integer, ForeignKey("eventos.id"), nullable=False)
+    slug = Column(String(200), unique=True, index=True)
+    descricao = Column(Text, nullable=True)
+    data_inicio = Column(Date, nullable=True)
+    data_fim = Column(Date, nullable=True)
+    local = Column(String(500), nullable=True)
+    site_url = Column(String(500), nullable=True)
     
     # Relacionamentos
     event = relationship("Event", back_populates="editions")
     articles = relationship("Article", back_populates="edition")
-
-    def __init__(self, ano, evento_id, event_nome=None, **kwargs):
-        super().__init__(ano=ano, evento_id=evento_id, **kwargs)
-        self.slug = gerar_slug_generico(ano)
 
 
 # -------------------------------
 # Modelo: Autor
 # -------------------------------
 class Author(Base):
-    __tablename__ = "autor"
+    __tablename__ = "autores"
     
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String, nullable=False)
@@ -99,14 +101,15 @@ class Author(Base):
 
     def __init__(self, nome, sobrenome=None, **kwargs):
         super().__init__(nome=nome, sobrenome=sobrenome, **kwargs)
-        self.slug = gerar_slug_generico(nome, sobrenome)
+        if not kwargs.get('slug'):  # Só gera slug se não foi fornecido
+            self.slug = gerar_slug_generico(nome, sobrenome)
 
 
 # -------------------------------
 # Modelo: Artigo
 # -------------------------------
 class Article(Base):
-    __tablename__ = "artigo"
+    __tablename__ = "artigos"
     
     id = Column(Integer, primary_key=True, index=True)
     titulo = Column(String, nullable=False)
@@ -115,7 +118,7 @@ class Article(Base):
     palavras_chave = Column(String)
     pdf_path = Column(String)
     data_publicacao = Column(Date)
-    edicao_id = Column(Integer, ForeignKey("edicao.id"), nullable=False)
+    edicao_id = Column(Integer, ForeignKey("edicoes.id"), nullable=False)
     
     # Relacionamentos
     edition = relationship("Edition", back_populates="articles")
@@ -126,7 +129,7 @@ class Article(Base):
 # Modelo: Usuário
 # -------------------------------
 class User(Base):
-    __tablename__ = "usuario"
+    __tablename__ = "usuarios"
     
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String, nullable=False)
@@ -144,11 +147,11 @@ class User(Base):
 # Modelo: Notificação
 # -------------------------------
 class Notification(Base):
-    __tablename__ = "notificacao"
+    __tablename__ = "notificacoes"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("usuario.id"), nullable=False)
-    author_id = Column(Integer, ForeignKey("autor.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    author_id = Column(Integer, ForeignKey("autores.id"), nullable=False)
     is_active = Column(Integer, default=1)
     created_at = Column(Date, default=func.current_date())
     
@@ -161,13 +164,12 @@ class Notification(Base):
 # Modelo: Log de Emails
 # -------------------------------
 class EmailLog(Base):
-    __tablename__ = "email_log"
+    __tablename__ = "email_logs"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("usuario.id"), nullable=False)
-    article_id = Column(Integer, ForeignKey("artigo.id"), nullable=False)
-    author_id = Column(Integer, ForeignKey("autor.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    article_id = Column(Integer, ForeignKey("artigos.id"), nullable=False)
+    author_id = Column(Integer, ForeignKey("autores.id"), nullable=False)
     sent_at = Column(Date, default=func.current_date())
     email_subject = Column(String)
     status = Column(String, default="sent")
-

@@ -6,6 +6,7 @@ import EditionCard from '../components/cards/EditionCard';
 const EditionsPage = ({ data: editions, loading, error, onReload }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedYear, setSelectedYear] = useState("all");
+  const [eventos, setEventos] = useState([]);
 
   // Auto-reload quando a página é carregada
   useEffect(() => {
@@ -13,6 +14,22 @@ const EditionsPage = ({ data: editions, loading, error, onReload }) => {
       onReload();
     }
   }, [onReload]);
+
+  // Carregar eventos para ter acesso aos slugs
+  useEffect(() => {
+    const fetchEventos = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/eventos');
+        if (response.ok) {
+          const data = await response.json();
+          setEventos(data);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar eventos:', error);
+      }
+    };
+    fetchEventos();
+  }, []);
 
   if (loading) return <LoadingSpinner message="Carregando edições..." />;
   if (error) return <div className="text-center py-12 text-red-600">Erro: {error}</div>;
@@ -79,9 +96,16 @@ const EditionsPage = ({ data: editions, loading, error, onReload }) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEditions.map((edition) => (
-            <EditionCard key={edition.id} edition={edition} />
-          ))}
+          {filteredEditions.map((edition) => {
+            const evento = eventos.find(e => e.id === edition.evento_id);
+            return (
+              <EditionCard 
+                key={edition.id} 
+                edition={edition} 
+                event={evento}
+              />
+            );
+          })}
         </div>
 
         {filteredEditions.length === 0 && (

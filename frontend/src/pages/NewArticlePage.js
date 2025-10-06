@@ -19,11 +19,31 @@ const NewArticlePage = ({ onReload }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Carregar edições disponíveis
-    fetch("http://localhost:8000/edicoes")
-      .then(res => res.json())
-      .then(data => setEdicoes(data))
-      .catch(err => console.error(err));
+    // Carregar edições disponíveis com informações do evento
+    const carregarEdicoes = async () => {
+      try {
+        const edicoesRes = await fetch("http://localhost:8000/edicoes");
+        const edicoesData = await edicoesRes.json();
+        
+        const eventosRes = await fetch("http://localhost:8000/eventos");
+        const eventosData = await eventosRes.json();
+        
+        // Combinar dados das edições com informações dos eventos
+        const edicoesComEventos = edicoesData.map(edicao => {
+          const evento = eventosData.find(e => e.id === edicao.evento_id);
+          return {
+            ...edicao,
+            evento_nome: evento ? evento.nome : 'Evento não encontrado'
+          };
+        });
+        
+        setEdicoes(edicoesComEventos);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    
+    carregarEdicoes();
   }, []);
 
   // Carregar dados do artigo se for edição
@@ -129,30 +149,67 @@ const NewArticlePage = ({ onReload }) => {
         formData.append('pdf_file', pdfFile);
       }
 
-      const url = isEditing ? `http://localhost:8000/artigos/${id}` : "http://localhost:8000/artigos";
+      // CORREÇÃO: Usar endpoint correto para edição
+      const url = isEditing 
+        ? `http://localhost:8000/artigos/${id}/form`  // Endpoint específico para FormData
+        : "http://localhost:8000/artigos";
       const method = isEditing ? "PUT" : "POST";
+      
+      // Não precisamos de flags extras para edição
+
+      console.log('Enviando dados:', { 
+        isEditing, 
+        url, 
+        method,
+        titulo: form.titulo,
+        autores: autoresData.length,
+        edicao_id: form.edicao_id
+      });
 
       const res = await fetch(url, {
         method: method,
         body: formData,  // Usar FormData em vez de JSON
       });
 
+      console.log('Resposta do servidor:', res.status);
+
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.detail || `Erro ao ${isEditing ? 'atualizar' : 'cadastrar'} artigo`);
+        let errorMessage = `Erro ${res.status}: `;
+        try {
+          const errData = await res.json();
+          errorMessage += errData.detail || errData.message || 'Erro desconhecido';
+          console.error('Detalhes do erro:', errData);
+        } catch (parseError) {
+          errorMessage += `Erro de comunicação com o servidor`;
+          console.error('Erro ao parsear resposta:', parseError);
+        }
+        throw new Error(errorMessage);
       }
 
-      await res.json();
-      alert(`Artigo ${isEditing ? 'atualizado' : 'cadastrado'} com sucesso!`);
+      const result = await res.json();
+      console.log('Artigo salvo com sucesso:', result);
+      
+      alert(`✅ Artigo ${isEditing ? 'atualizado' : 'cadastrado'} com sucesso!`);
       
       // Recarregar lista de artigos
       if (onReload) {
+        console.log('Recarregando lista de artigos...');
         onReload();
       }
       
-      navigate(isEditing ? "/dashboard" : "/admin/articles");
+      navigate(isEditing ? "/dashboard" : "/articles");
     } catch (err) {
-      alert(err.message);
+      console.error('Erro completo:', err);
+      
+      // Melhor tratamento de erro
+      let errorMessage = 'Erro ao salvar artigo';
+      if (err.message) {
+        errorMessage = err.message;
+      } else if (typeof err === 'object') {
+        errorMessage = `Erro: ${JSON.stringify(err)}`;
+      }
+      
+      alert(errorMessage);
     }
   };
 
@@ -265,7 +322,7 @@ const NewArticlePage = ({ onReload }) => {
               <option value="">Selecione uma edição</option>
               {edicoes.map((edicao) => (
                 <option key={edicao.id} value={edicao.id}>
-                  Edição {edicao.ano} (ID: {edicao.id})
+                  {edicao.evento_nome} - {edicao.ano}
                 </option>
               ))}
             </select>
