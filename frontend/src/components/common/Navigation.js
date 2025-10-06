@@ -138,7 +138,7 @@ const Navigation = () => {
                 </button>
 
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-papel rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-50 border border-madeira">
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-50 border border-madeira">
                     <div className="py-1">
                       {/* Dashboard só para admin */}
                       {isAdmin() && (

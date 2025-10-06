@@ -55,7 +55,7 @@ const ArticlesPage = ({ artigos = [], loading, error }) => {
           artigo.authors.some(author =>
             `${author.nome} ${author.sobrenome}`.toLowerCase().includes(termo)
           )) ||
-        (eventoNome && eventoNome.includes(termo)); // ✅ só compara se eventoNome existir
+        (eventoNome && eventoNome.includes(termo)); 
 
       return matchesSearch;
     }
