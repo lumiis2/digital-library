@@ -197,7 +197,7 @@ const NewArticlePage = ({ onReload }) => {
         onReload();
       }
       
-      navigate(isEditing ? "/dashboard" : "/admin/articles");
+      navigate(isEditing ? "/dashboard" : "/articles");
     } catch (err) {
       console.error('Erro completo:', err);
       
