@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SearchIcon } from '../components/common/Icons';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ArticleCard from '../components/cards/ArticleCard';
@@ -6,32 +6,65 @@ import ArticleCard from '../components/cards/ArticleCard';
 const ArticlesPage = ({ artigos = [], loading, error }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedArea, setSelectedArea] = useState("all");
+  const [eventos, setEventos] = useState([]);
+  const [edicoes, setEdicoes] = useState([]);
 
-  console.log("ArticlesPage - Props:", { artigos, loading, error });
-  console.log("ArticlesPage - Artigos length:", artigos?.length);
+  // 🔹 Buscar eventos e edições
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [resEventos, resEdicoes] = await Promise.all([
+          fetch("http://localhost:8000/eventos"),
+          fetch("http://localhost:8000/edicoes"),
+        ]);
+        const dataEventos = await resEventos.json();
+        const dataEdicoes = await resEdicoes.json();
+        setEventos(dataEventos);
+        setEdicoes(dataEdicoes);
+      } catch (err) {
+        console.error("Erro ao carregar eventos/edições:", err);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // 🔹 Pega o nome do evento correspondente à edição do artigo
+  const getEventoNome = (artigo) => {
+    if (!artigo?.edicao_id) return null;
+    const edicao = edicoes.find(e => e.id === artigo.edicao_id);
+    if (!edicao) return null;
+    const evento = eventos.find(ev => ev.id === edicao.evento_id);
+    
+    return evento ? evento.nome?.toLowerCase() : null;
+  };
 
   if (loading) return <LoadingSpinner message="Carregando artigos..." />;
   if (error) return <div className="text-center py-12 text-red-600">Erro: {error}</div>;
 
   const areas = [...new Set((artigos || []).map(a => a.area))];
 
-  const filteredArtigos = artigos.filter(artigo => {
-    if(searchTerm.trim().length > 0){
-      const matchesSearch = artigo.titulo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          artigo.palavras_chave?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          artigo.authors?.some(author => 
-                            `${author.nome} ${author.sobrenome}`.toLowerCase().includes(searchTerm.toLowerCase())
-                          );
+  const filteredArtigos = artigos.filter((artigo) => {
+    const termo = searchTerm.toLowerCase().trim();
+    const eventoNome = getEventoNome(artigo);
+
+    if (termo.length > 0) {
+      const matchesSearch =
+        (artigo.titulo && artigo.titulo.toLowerCase().includes(termo)) ||
+        (artigo.palavras_chave && artigo.palavras_chave.toLowerCase().includes(termo)) ||
+        (artigo.authors &&
+          artigo.authors.some(author =>
+            `${author.nome} ${author.sobrenome}`.toLowerCase().includes(termo)
+          )) ||
+        (eventoNome && eventoNome.includes(termo)); // ✅ só compara se eventoNome existir
+
       return matchesSearch;
     }
 
-    // Resolver: quando seleciona a area "Nenhum" aparecem todos os artigos
+    // Filtro por área (corrigido)
     const matchesArea = selectedArea === "none" || artigo.area === selectedArea;
-
     return matchesArea;
   });
 
-  // pega 3 artigos de destaque (aqui só pego os 3 primeiros como exemplo)
   const destaqueArtigos = artigos.slice(0, 3);
 
   return (
@@ -48,6 +81,7 @@ const ArticlesPage = ({ artigos = [], loading, error }) => {
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Campo de busca */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Buscar
@@ -56,14 +90,15 @@ const ArticlesPage = ({ artigos = [], loading, error }) => {
                 <SearchIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Título, palavras-chave ou autor..."
+                  placeholder="Título, autor, palavras-chave ou evento..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
-            
+
+            {/* Filtro por área */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Área
@@ -74,8 +109,10 @@ const ArticlesPage = ({ artigos = [], loading, error }) => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="none">Nenhum</option>
-                {areas.map(area => (
-                  <option key={area} value={area}>{area}</option>
+                {areas.map((area) => (
+                  <option key={area} value={area}>
+                    {area}
+                  </option>
                 ))}
               </select>
             </div>
@@ -94,14 +131,17 @@ const ArticlesPage = ({ artigos = [], loading, error }) => {
           </div>
         )}
 
-        {/* Results */}
+        {/* Resultados */}
         <div className="mb-4">
           <p className="text-gray-600">
-            {filteredArtigos.length} {filteredArtigos.length === 1 ? 'artigo encontrado' : 'artigos encontrados'}
+            {filteredArtigos.length}{" "}
+            {filteredArtigos.length === 1
+              ? "artigo encontrado"
+              : "artigos encontrados"}
           </p>
         </div>
 
-        {/* Articles Grid */}
+        {/* Grade de artigos */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredArtigos.map((artigo) => (
             <ArticleCard key={artigo.id} artigo={artigo} />
