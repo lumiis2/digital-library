@@ -493,29 +493,7 @@ def deletar_evento(evento_id: int, db: Session = Depends(get_db)):
             
             raise HTTPException(
                 status_code=400, 
-                detail={
-                    "error": "Não é possível excluir o evento",
-                    "motivo": "Há artigos científicos publicados neste evento",
-                    "evento": {
-                        "id": evento_db.id,
-                        "nome": evento_db.nome,
-                        "slug": evento_db.slug
-                    },
-                    "estatisticas": {
-                        "total_edicoes": len(edicoes),
-                        "edicoes_com_artigos": len(detalhes_edicoes),
-                        "total_artigos": total_artigos
-                    },
-                    "detalhes_edicoes": detalhes_edicoes,
-                    "sugestao": "Para excluir este evento, é necessário primeiro excluir todos os artigos de suas edições.",
-                    "passos_recomendados": [
-                        "1. Acesse cada edição do evento no dashboard",
-                        "2. Exclua todos os artigos de cada edição",
-                        "3. Exclua as edições vazias",
-                        "4. Finalmente, exclua o evento"
-                    ],
-                    "alternativa": "Considere manter o evento para preservar o histórico científico"
-                }
+                detail=f"Não é possível excluir o evento '{evento_db.nome}' porque há {total_artigos} artigo(s) vinculado(s) a ele. Exclua primeiro todos os artigos deste evento."
             )
         
         # Se não há artigos, verificar se há edições vazias
@@ -532,12 +510,7 @@ def deletar_evento(evento_id: int, db: Session = Depends(get_db)):
         
         print(f"✅ Evento {evento_id} deletado com sucesso")
         return {
-            "message": f"Evento '{evento_db.nome}' deletado com sucesso",
-            "detalhes": {
-                "evento_deletado": evento_db.nome,
-                "edicoes_deletadas": len(edicoes),
-                "artigos_preservados": 0
-            }
+            "message": f"Evento '{evento_db.nome}' deletado com sucesso"
         }
         
     except HTTPException:
@@ -738,13 +711,56 @@ def atualizar_edicao(edicao_id: int, edicao_data: dict, db: Session = Depends(ge
 
 @app.delete("/edicoes/{edicao_id}")
 def deletar_edicao(edicao_id: int, db: Session = Depends(get_db)):
-    edicao_db = db.query(Edition).filter(Edition.id == edicao_id).first()
-    if not edicao_db:
-        raise HTTPException(status_code=404, detail="Edição não encontrada")
-    
-    db.delete(edicao_db)
-    db.commit()
-    return {"message": "Edição deletada com sucesso"}
+    """
+    Deletar edição apenas se não houver artigos vinculados.
+    Verifica se há artigos publicados nesta edição.
+    """
+    try:
+        print(f"🗑️ Tentando deletar edição ID: {edicao_id}")
+        
+        # Buscar a edição
+        edicao_db = db.query(Edition).filter(Edition.id == edicao_id).first()
+        if not edicao_db:
+            print(f"❌ Edição {edicao_id} não encontrada")
+            raise HTTPException(status_code=404, detail="Edição não encontrada")
+        
+        print(f"📅 Edição encontrada: {edicao_db.ano}")
+        
+        # Buscar o evento da edição para mostrar nome completo
+        evento = db.query(Event).filter(Event.id == edicao_db.evento_id).first()
+        evento_nome = evento.nome if evento else "Evento"
+        
+        print(f"🎯 Evento: {evento_nome}")
+        
+        # Verificar se há artigos vinculados a esta edição
+        artigos_count = db.query(Article).filter(Article.edicao_id == edicao_id).count()
+        print(f"📝 Total de artigos vinculados à edição: {artigos_count}")
+        
+        # Se há artigos, impedir exclusão
+        if artigos_count > 0:
+            print(f"❌ Exclusão impedida: edição tem {artigos_count} artigos")
+            
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Não é possível excluir a edição {edicao_db.ano} do evento '{evento_nome}' porque há {artigos_count} artigo(s) vinculado(s) a ela. Exclua primeiro todos os artigos desta edição."
+            )
+        
+        # Se não há artigos, pode deletar a edição
+        print(f"🗑️ Deletando edição sem artigos vinculados...")
+        db.delete(edicao_db)
+        db.commit()
+        
+        print(f"✅ Edição {edicao_id} deletada com sucesso")
+        return {
+            "message": f"Edição {edicao_db.ano} deletada com sucesso"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Erro ao deletar edição {edicao_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro interno do servidor: {str(e)}")
 
 @app.get("/eventos/{evento_slug}/edicoes")
 def listar_edicoes_do_evento(evento_slug: str, db: Session = Depends(get_db)):

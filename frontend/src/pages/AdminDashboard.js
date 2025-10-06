@@ -72,7 +72,16 @@ const AdminDashboard = ({
       });
 
       if (!res.ok) {
-        throw new Error("Erro ao excluir evento");
+        let errorMessage = "Erro ao excluir evento";
+        try {
+          const errorData = await res.json();
+          if (errorData.detail) {
+            errorMessage = errorData.detail;
+          }
+        } catch (parseError) {
+          // Se não conseguir parsear, usar mensagem genérica
+        }
+        throw new Error(errorMessage);
       }
 
       // Recarrega a lista de eventos
@@ -96,7 +105,16 @@ const AdminDashboard = ({
       });
 
       if (!res.ok) {
-        throw new Error("Erro ao excluir edição");
+        let errorMessage = "Erro ao excluir edição";
+        try {
+          const errorData = await res.json();
+          if (errorData.detail) {
+            errorMessage = errorData.detail;
+          }
+        } catch (parseError) {
+          // Se não conseguir parsear, usar mensagem genérica
+        }
+        throw new Error(errorMessage);
       }
 
       // Recarrega a lista de edições
