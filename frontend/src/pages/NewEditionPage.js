@@ -151,6 +151,12 @@ const NewEditionPage = () => {
       newErrors.data_fim = 'Data de fim deve ser posterior à data de início';
     }
 
+    // Verificar se o evento existe na lista
+    const eventoExiste = eventos.find(e => e.id.toString() === formData.evento_id.toString());
+    if (formData.evento_id && !eventoExiste) {
+      newErrors.evento_id = 'Evento selecionado não é válido';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -166,28 +172,35 @@ const NewEditionPage = () => {
       const url = id ? `http://localhost:8000/edicoes/${id}` : 'http://localhost:8000/edicoes';
       const method = id ? 'PUT' : 'POST';
 
+      const requestData = {
+        ...formData,
+        ano: parseInt(formData.ano),
+        evento_id: parseInt(formData.evento_id)
+      };
+
+      console.log('Enviando dados para criação de edição:', requestData);
+
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           ...(token && { 'Authorization': `Bearer ${token}` })
         },
-        body: JSON.stringify({
-          ...formData,
-          ano: parseInt(formData.ano),
-          evento_id: parseInt(formData.evento_id)
-        })
+        body: JSON.stringify(requestData)
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || 'Erro ao salvar edição');
+        console.error('Erro da API:', errorData);
+        throw new Error(errorData.detail || `Erro ${response.status}: ${response.statusText}`);
       }
 
       const result = await response.json();
+      console.log('Edição criada/atualizada com sucesso:', result);
       
-      // Navegar para a página da edição criada/editada
-      navigate(`/eventos/${result.evento?.slug || 'evento'}/${result.ano}`);
+      // Mostrar mensagem de sucesso e navegar para o painel administrativo
+      alert(id ? 'Edição atualizada com sucesso!' : 'Edição criada com sucesso!');
+      navigate('/admin');
       
     } catch (error) {
       console.error('Erro ao salvar edição:', error);
@@ -236,7 +249,7 @@ const NewEditionPage = () => {
                 <option value="">Selecione um evento</option>
                 {eventos.map(evento => (
                   <option key={evento.id} value={evento.id}>
-                    {evento.sigla} ({evento.slug.toUpperCase()})
+                    {evento.nome} ({evento.slug})
                   </option>
                 ))}
               </select>

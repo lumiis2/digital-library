@@ -2078,6 +2078,67 @@ async def test_notifications_for_article(article_id: int, db: Session = Depends(
             "error": f"Erro ao processar notificações: {str(e)}"
         }
 
+@app.get("/debug/autores")
+def debug_autores(db: Session = Depends(get_db)):
+    """Debug dos autores no banco de dados"""
+    try:
+        autores = db.query(Author).all()
+        
+        result = []
+        for autor in autores:
+            # Contar artigos do autor
+            artigos_count = db.query(Article).join(Article.authors).filter(Author.id == autor.id).count()
+            
+            result.append({
+                "id": autor.id,
+                "nome": autor.nome,
+                "sobrenome": autor.sobrenome,
+                "slug": autor.slug,
+                "artigos_count": artigos_count
+            })
+        
+        return {
+            "total_autores": len(result),
+            "autores": result
+        }
+        
+    except Exception as e:
+        return {"error": f"Erro ao buscar autores: {str(e)}"}
+
+@app.post("/admin/sync-autores")
+def sync_autores_from_artigos(db: Session = Depends(get_db)):
+    """Sincroniza autores baseado nos artigos existentes"""
+    try:
+        # Buscar todos os artigos
+        artigos = db.query(Article).all()
+        
+        contador_sincronizados = 0
+        
+        for artigo in artigos:
+            print(f"📄 Sincronizando autores do artigo: {artigo.titulo}")
+            
+            # Verificar se o artigo tem autores
+            if not artigo.authors:
+                print(f"⚠️ Artigo sem autores: {artigo.titulo}")
+                continue
+            
+            for author in artigo.authors:
+                print(f"👤 Autor encontrado: {author.nome} {author.sobrenome}")
+                contador_sincronizados += 1
+        
+        # Contar total de autores únicos
+        total_autores = db.query(Author).count()
+        
+        return {
+            "message": "Sincronização concluída",
+            "total_autores_no_banco": total_autores,
+            "autores_em_artigos": contador_sincronizados,
+            "artigos_processados": len(artigos)
+        }
+        
+    except Exception as e:
+        return {"error": f"Erro na sincronização: {str(e)}"}
+
 @app.get("/admin/debug-user-notifications/{user_id}")
 def debug_user_notifications(user_id: int, db: Session = Depends(get_db)):
     """Debug das notificações de um usuário específico"""

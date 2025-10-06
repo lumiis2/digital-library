@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useAuth } from "../components/common/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const AdminDashboard = ({ 
   artigos = [], // CORREÇÃO: Valor padrão
@@ -12,6 +12,7 @@ const AdminDashboard = ({
 }) => {
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (!isAdmin()) {
@@ -19,6 +20,15 @@ const AdminDashboard = ({
       return;
     }
   }, [isAdmin, navigate]);
+
+  // Mostrar mensagem de sucesso se houver
+  useEffect(() => {
+    if (location.state?.message) {
+      alert(location.state.message);
+      // Limpar o state para não mostrar a mensagem novamente
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // CORREÇÃO: Verificar se os dados são arrays válidos
   const artigosArray = Array.isArray(artigos) ? artigos : [];
@@ -107,7 +117,7 @@ const AdminDashboard = ({
               Gerenciar Artigos
             </h2>
             <button
-              onClick={() => navigate("/admin/articles")}
+              onClick={() => navigate("/admin/articles/new")}
               className="px-5 py-2 bg-douradoSol text-papel rounded-lg shadow hover:bg-douradoSol/90 font-semibold transition"
             >
               + Cadastrar Artigo
@@ -166,7 +176,7 @@ const AdminDashboard = ({
               Gerenciar Eventos
             </h2>
             <button
-              onClick={() => navigate("/admin/events")}
+              onClick={() => navigate("/admin/events/new")}
               className="px-5 py-2 bg-douradoSol text-papel rounded-lg shadow hover:bg-douradoSol/90 font-semibold transition"
             >
               + Cadastrar Evento
@@ -234,39 +244,42 @@ const AdminDashboard = ({
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2">
-              {edicoesArray.map((edition) => (
-                <div
-                  key={edition.id}
-                  className="bg-white p-6 rounded-lg shadow border border-gray-200 hover:shadow-lg transition"
-                >
-                  <h3 className="font-bold text-lg text-floresta mb-2">
-                    Edição {edition.ano}
-                  </h3>
-                  <p className="text-sm text-gray-700 mb-2">
-                    <span className="font-semibold">Evento:</span> {
-                      eventosArray.find(e => e.id === edition.evento_id)?.nome || `ID ${edition.evento_id}`
-                    }
-                  </p>
+              {edicoesArray.map((edition) => {
+                const evento = eventosArray.find(e => e.id === edition.evento_id);
+                return (
+                  <div
+                    key={edition.id}
+                    className="bg-white p-6 rounded-lg shadow border border-gray-200 hover:shadow-lg transition"
+                  >
+                    <h3 className="font-bold text-lg text-floresta mb-2">
+                      Edição {edition.ano}
+                    </h3>
+                    <p className="text-sm text-gray-700 mb-2">
+                      <span className="font-semibold">Evento:</span> {
+                        evento?.nome || `ID ${edition.evento_id}`
+                      }
+                    </p>
 
-                  <div className="flex space-x-2">
-                    {/* Botão de editar edição */}
-                    <button
-                      onClick={() => navigate(`/admin/edicoes/${edition.id}/edit`)}
-                      className="px-4 py-1 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition text-sm"
-                    >
-                      Editar
-                    </button>
+                    <div className="flex space-x-2">
+                      {/* Botão de editar edição */}
+                      <button
+                        onClick={() => navigate(`/admin/edicoes/${edition.id}/edit`)}
+                        className="px-4 py-1 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition text-sm"
+                      >
+                        Editar
+                      </button>
 
-                    {/* Botão de excluir edição */}
-                    <button
-                      onClick={() => handleDeleteEdition(edition.id)}
-                      className="px-4 py-1 bg-red-600 text-white rounded shadow hover:bg-red-700 transition text-sm"
-                    >
-                      Excluir
-                    </button>
+                      {/* Botão de excluir edição */}
+                      <button
+                        onClick={() => handleDeleteEdition(edition.id)}
+                        className="px-4 py-1 bg-red-600 text-white rounded shadow hover:bg-red-700 transition text-sm"
+                      >
+                        Excluir
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>

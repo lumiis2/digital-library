@@ -5,11 +5,34 @@ import { FolderIcon } from '../common/Icons';
 const EditionCard = ({ edition, event }) => {
   const navigate = useNavigate();
   
-  const handleClick = () => {
-    // Por enquanto, vou navegar para uma rota alternativa usando IDs
-    // Formato: /edicoes/{evento_id}/{ano}
-    console.log('Navegando para edição:', edition);
-    navigate(`/edicoes/${edition.evento_id}/${edition.ano}`);
+  const handleClick = async () => {
+    // Debug para verificar o que temos
+    console.log('EditionCard clicado - Edition:', edition);
+    console.log('EditionCard clicado - Event:', event);
+    
+    // Se temos informações do evento, usar o slug
+    if (event && event.slug) {
+      console.log('Navegando para edição via slug do evento:', event.slug, edition.ano);
+      navigate(`/${event.slug}/${edition.ano}`);
+    } else {
+      // Se não temos o evento, buscar primeiro
+      try {
+        console.log('Buscando evento para navegação:', edition.evento_id);
+        const response = await fetch(`http://localhost:8000/eventos/${edition.evento_id}`);
+        if (response.ok) {
+          const eventoData = await response.json();
+          console.log('Evento encontrado:', eventoData);
+          navigate(`/${eventoData.slug}/${edition.ano}`);
+        } else {
+          console.error('Não foi possível encontrar o evento - status:', response.status);
+          // Fallback para página de eventos se não conseguir encontrar
+          navigate('/events');
+        }
+      } catch (error) {
+        console.error('Erro ao buscar evento:', error);
+        navigate('/events');
+      }
+    }
   };
 
   return (

@@ -34,6 +34,31 @@ function App() {
 
   const navigate = useNavigate(); // <-- hook para navegação
 
+  // Função para recarregar autores
+  const reloadAutores = useCallback(() => {
+    setLoadingAutores(true);
+    console.log('🔄 Recarregando autores...');
+    
+    fetch('http://localhost:8000/autores')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('✅ Autores carregados:', data.length);
+        setAutores(data);
+      })
+      .catch(error => {
+        console.error('❌ Erro ao carregar autores:', error);
+        setAutores([]);
+      })
+      .finally(() => {
+        setLoadingAutores(false);
+      });
+  }, []);
+
   // Função para recarregar eventos
   const reloadEventos = useCallback(() => {
     console.log("🔄 Recarregando eventos...");
@@ -92,12 +117,16 @@ function App() {
         console.log("Artigos recarregados:", data);
         setArtigos(data); 
         setLoading(false); 
+        
+        // IMPORTANTE: Recarregar autores após carregar artigos
+        // porque novos autores podem ter sido criados
+        reloadAutores();
       })
       .catch(error => {
         console.error("Erro ao recarregar artigos:", error);
         setLoading(false);
       });
-  }, []);
+  }, [reloadAutores]);
 
   useEffect(() => {
     console.log("Carregando artigos...");
@@ -118,11 +147,9 @@ function App() {
   }, []);
 
   useEffect(() => {
-    fetch("http://localhost:8000/autores")
-      .then(res => res.json())
-      .then(data => { setAutores(data); setLoadingAutores(false); })
-      .catch(() => setLoadingAutores(false));
-  }, []);
+    console.log('🚀 Carregando autores inicialmente...');
+    reloadAutores();
+  }, [reloadAutores]);
 
   useEffect(() => {
     reloadEventos();
@@ -156,7 +183,7 @@ function App() {
             
             {/* ROTAS FIXAS PRIMEIRO - MUITO IMPORTANTE A ORDEM */}
             <Route path="/articles" element={<ArticlesPage artigos={artigos} loading={loadingArtigos} />} />
-            <Route path="/authors" element={<AuthorsPage data={autores} loading={loadingAutores} />} />
+            <Route path="/authors" element={<AuthorsPage data={autores} loading={loadingAutores} onReload={reloadAutores} />} />
             <Route path="/events" element={<EventsPage data={eventos} loading={loadingEventos} onReload={reloadEventos} />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
@@ -189,7 +216,6 @@ function App() {
             <Route path="/eventos/:slug" element={<EventDetailPage />} />
             <Route path="/autores/:slug" element={<AuthorDetailPage />} />
             <Route path="/author/:authorId" element={<AuthorDetailPage />} />
-            <Route path="/edicoes/:eventoId/:ano" element={<EditionDetailPage />} />
             <Route path="/editions" element={<EditionsPage data={edicoes} loading={loadingEdicoes} onReload={reloadEdicoes} />} />
             
             {/* ROTAS DINÂMICAS POR ÚLTIMO - ESTAS SÃO FALLBACK */}

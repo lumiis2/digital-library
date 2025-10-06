@@ -101,7 +101,7 @@ const AdminPanel = () => {
               <h3 className="text-xl font-semibold text-gray-800">Dashboard</h3>
             </div>
             <p className="text-gray-600 mb-4">Visualize estatísticas e relatórios.</p>
-            <Link to="/dashboard" className="block w-full bg-orange-600 text-white text-center py-2 px-4 rounded hover:bg-orange-700">
+            <Link to="/admin" className="block w-full bg-orange-600 text-white text-center py-2 px-4 rounded hover:bg-orange-700">
               Ver Dashboard
             </Link>
           </div>

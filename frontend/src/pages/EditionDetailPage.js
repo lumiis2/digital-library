@@ -4,7 +4,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import ArticleCard from '../components/cards/ArticleCard';
 
 function EditionDetailPage() {
-  const { slug, ano, eventoId, eventSlug, year } = useParams();
+  const { slug, ano, eventSlug, year } = useParams();
   const [evento, setEvento] = useState(null);
   const [edicao, setEdicao] = useState(null);
   const [artigos, setArtigos] = useState([]);
@@ -20,21 +20,7 @@ function EditionDetailPage() {
       try {
         setLoading(true);
         
-        // Determinar se estamos usando slug ou eventoId
-        const isUsingEventoId = eventoId && !currentSlug;
-        // const isUsingFriendlyUrl = !(eventSlug === 'edicao-id' && !isNaN(parseInt(year)));
-        
-        if (isUsingEventoId) {
-          // Abordagem alternativa: buscar edição diretamente usando evento_id
-          // Por enquanto, vamos simular os dados já que não temos todos os endpoints
-          setEvento({ nome: `Evento ${eventoId}`, slug: `evento-${eventoId}` });
-          setEdicao({ evento_id: eventoId, ano: parseInt(currentYear) });
-          setArtigos([]); // Por enquanto vazio
-          setLoading(false);
-          return;
-        }
-        
-        // Buscar dados do evento usando slug (implementação original + friendly URLs)
+        // Buscar dados do evento usando slug
         const eventoResponse = await fetch(`http://localhost:8000/eventos/${currentSlug}`);
         if (!eventoResponse.ok) {
           throw new Error('Evento não encontrado');
@@ -42,21 +28,67 @@ function EditionDetailPage() {
         const eventoData = await eventoResponse.json();
         setEvento(eventoData);
 
-        // Buscar dados da edição
-        const edicaoResponse = await fetch(`http://localhost:8000/eventos/${currentSlug}/${currentYear}`);
-        if (!edicaoResponse.ok) {
-          throw new Error('Edição não encontrada');
+        // Tentar buscar dados da edição usando endpoint específico primeiro
+        let edicaoData = null;
+        try {
+          const edicaoResponse = await fetch(`http://localhost:8000/eventos/${currentSlug}/${currentYear}`);
+          if (edicaoResponse.ok) {
+            edicaoData = await edicaoResponse.json();
+          }
+        } catch (e) {
+          console.log('Endpoint específico não disponível, usando fallback');
         }
-        const edicaoData = await edicaoResponse.json();
+
+        // Se não conseguiu pelo endpoint específico, buscar todas as edições e filtrar
+        if (!edicaoData) {
+          const edicoesResponse = await fetch(`http://localhost:8000/edicoes`);
+          if (!edicoesResponse.ok) {
+            throw new Error('Erro ao carregar edições');
+          }
+          const edicoesData = await edicoesResponse.json();
+          
+          // Encontrar a edição específica
+          const edicaoEncontrada = edicoesData.find(e => 
+            e.evento_id === eventoData.id && 
+            e.ano.toString() === currentYear.toString()
+          );
+          
+          if (!edicaoEncontrada) {
+            throw new Error('Edição não encontrada');
+          }
+          
+          edicaoData = edicaoEncontrada;
+        }
+        
+        console.log('Edição encontrada:', edicaoData);
+        console.log('Dados da edição - Descrição:', edicaoData.descricao);
+        console.log('Dados da edição - Data início:', edicaoData.data_inicio);
+        console.log('Dados da edição - Local:', edicaoData.local);
+        console.log('Dados da edição - Site:', edicaoData.site_url);
         setEdicao(edicaoData);
 
         // Buscar artigos da edição
-        const artigosResponse = await fetch(`http://localhost:8000/eventos/${currentSlug}/${currentYear}/artigos`);
-        if (!artigosResponse.ok) {
-          throw new Error('Erro ao carregar artigos');
+        try {
+          const artigosResponse = await fetch(`http://localhost:8000/eventos/${currentSlug}/${currentYear}/artigos`);
+          if (artigosResponse.ok) {
+            const artigosData = await artigosResponse.json();
+            setArtigos(artigosData);
+          } else {
+            // Fallback: buscar todos os artigos e filtrar
+            const allArtigosResponse = await fetch(`http://localhost:8000/artigos`);
+            if (allArtigosResponse.ok) {
+              const allArtigos = await allArtigosResponse.json();
+              const artigosDaEdicao = allArtigos.filter(artigo => 
+                artigo.edicao_id === edicaoData.id
+              );
+              setArtigos(artigosDaEdicao);
+            } else {
+              setArtigos([]);
+            }
+          }
+        } catch (e) {
+          setArtigos([]);
         }
-        const artigosData = await artigosResponse.json();
-        setArtigos(artigosData);
         
       } catch (err) {
         setError(err.message);
@@ -65,10 +97,10 @@ function EditionDetailPage() {
       }
     };
 
-    if ((currentSlug && currentYear) || (eventoId && currentYear)) {
+    if (currentSlug && currentYear) {
       fetchEdicaoEArtigos();
     }
-  }, [eventSlug, year]); // Added missing dependencies
+  }, [currentSlug, currentYear]); // Fixed dependencies
 
   if (loading) return <LoadingSpinner />;
   
@@ -124,7 +156,78 @@ function EditionDetailPage() {
               </span>
             </div>
           </div>
-          <p className="text-gray-600">
+          
+          {/* Descrição da edição */}
+          {edicao.descricao && (
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <h3 className="font-medium text-gray-900 mb-2">Sobre esta edição</h3>
+              <p className="text-gray-700">{edicao.descricao}</p>
+            </div>
+          )}
+          
+          {/* Informações da edição */}
+          {(edicao.data_inicio || edicao.data_fim || edicao.local || edicao.site_url) && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+              {/* Data */}
+              {(edicao.data_inicio || edicao.data_fim) && (
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Data do Evento</p>
+                    <p className="text-sm text-gray-600">
+                      {edicao.data_inicio && new Date(edicao.data_inicio).toLocaleDateString('pt-BR')}
+                      {edicao.data_inicio && edicao.data_fim && ' - '}
+                      {edicao.data_fim && new Date(edicao.data_fim).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Local */}
+              {edicao.local && (
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Local</p>
+                    <p className="text-sm text-gray-600">{edicao.local}</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Site */}
+              {edicao.site_url && (
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Site do Evento</p>
+                    <a 
+                      href={edicao.site_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-sm text-purple-600 hover:text-purple-800 underline"
+                    >
+                      Visitar site oficial
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <p className="text-gray-600 mt-6">
             Explore todos os artigos publicados na edição de {currentYear} do {evento.nome}.
           </p>
         </div>
@@ -211,7 +314,7 @@ function EditionDetailPage() {
               <div className="text-sm text-gray-600">Áreas</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">{ano}</div>
+              <div className="text-2xl font-bold text-orange-600">{currentYear}</div>
               <div className="text-sm text-gray-600">Ano</div>
             </div>
           </div>

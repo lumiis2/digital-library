@@ -1,21 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SearchIcon } from '../components/common/Icons';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import AuthorCard from '../components/cards/AuthorCard';
 
-const AuthorsPage = ({ data: authors, loading, error }) => {
+const AuthorsPage = ({ data: authors, loading, error, onReload }) => {
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Auto-reload quando a página é carregada
+  useEffect(() => {
+    if (onReload && typeof onReload === 'function') {
+      onReload();
+    }
+  }, [onReload]);
 
   if (loading) return <LoadingSpinner message="Carregando autores..." />;
   if (error) return <div className="text-center py-12 text-red-600">Erro: {error}</div>;
 
+  // Verificar se authors é um array válido
+  const authorsArray = Array.isArray(authors) ? authors : [];
+  console.log('📊 AuthorsPage - Total de autores:', authorsArray.length);
+
   const filteredAuthors = searchTerm.trim() !== "" 
-  ? authors.filter(author => 
-    author.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    author.sobrenome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    author.instituicao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    author.area_expertise?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) : authors; // Mostrar todos os autores quando não há busca
+    ? authorsArray.filter(author => 
+        author.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        author.sobrenome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        author.instituicao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        author.area_expertise?.toLowerCase().includes(searchTerm.toLowerCase())
+      ) : authorsArray;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -23,8 +34,13 @@ const AuthorsPage = ({ data: authors, loading, error }) => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Autores</h1>
           <p className="text-gray-600">
-            Conheça os {authors.length} autores de nossa biblioteca
+            Conheça os {authorsArray.length} autores de nossa biblioteca
           </p>
+          
+          {/* Debug info - remover em produção */}
+          <div className="mt-2 text-sm text-gray-500">
+            Debug: {authorsArray.length} autores carregados
+          </div>
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
@@ -49,13 +65,24 @@ const AuthorsPage = ({ data: authors, loading, error }) => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredAuthors.map((author) => (
-            <AuthorCard key={author.id} author={author} />
-          ))}
-        </div>
+        {authorsArray.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
+            <p className="text-gray-500 text-lg">
+              Nenhum autor encontrado no sistema.
+            </p>
+            <p className="text-gray-400 text-sm mt-2">
+              Autores são criados automaticamente quando artigos são adicionados.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredAuthors.map((author) => (
+              <AuthorCard key={author.id} author={author} />
+            ))}
+          </div>
+        )}
 
-        {filteredAuthors.length === 0 && (
+        {filteredAuthors.length === 0 && authorsArray.length > 0 && (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg">
               Nenhum autor encontrado com os critérios de busca.
