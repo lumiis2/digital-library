@@ -9,3 +9,7 @@ pyjwt
 fastapi-mail
 aiosmtplib
 python-multipart
+pytest
+pytest-cov
+pytest-asyncio
+httpx

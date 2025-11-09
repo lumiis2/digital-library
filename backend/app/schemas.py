@@ -42,8 +42,7 @@ class EditionCreate(EditionBase):
 class EditionRead(EditionBase):
     id: int
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ----------------------
 # Autor
@@ -102,9 +101,8 @@ class UserRead(BaseModel):
     email: EmailStr
     perfil: str
     receive_notifications: bool = True
-
-    class Config:
-        from_attributes = True
+    
+    model_config = ConfigDict(from_attributes=True)
 
 # ----------------------
 # Notificações
