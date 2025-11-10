@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from .database import SessionLocal
 from . import models, schemas
 from typing import List
+import hashlib
 
 def get_db():
     db = SessionLocal()
@@ -10,6 +11,10 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def hash_password(password: str) -> str:
+    """Hasha a senha usando SHA256"""
+    return hashlib.sha256(password.encode()).hexdigest()
 
 # ----------------------
 # Rotas para Eventos
@@ -33,6 +38,9 @@ async def create_edition(edicao: schemas.EditionCreate, db: Session = Depends(ge
     db.commit()
     db.refresh(db_edicao)
     return db_edicao
+
+async def get_editions(db: Session = Depends(get_db)):
+    return db.query(models.Edition).all()
 
 # ----------------------
 # Rotas para Autores
@@ -70,6 +78,49 @@ async def create_article(artigo: schemas.ArticleCreate, db: Session = Depends(ge
     db.refresh(db_artigo)
     return db_artigo
 
+async def get_articles(db: Session = Depends(get_db)):
+    return db.query(models.Article).all()
+
+# ----------------------
+# Rotas para Usuários
+# ----------------------
+async def create_user(usuario: schemas.UserCreate, db: Session = Depends(get_db)):
+    # Verifica se usuário já existe
+    db_user = db.query(models.User).filter(models.User.email == usuario.email).first()
+    if db_user:
+        raise HTTPException(status_code=400, detail="Email já cadastrado")
+    
+    db_usuario = models.User(
+        nome=usuario.nome,
+        email=usuario.email,
+        senha_hash=hash_password(usuario.senha_hash),
+        perfil=usuario.perfil,
+        receive_notifications=1 if usuario.receive_notifications else 0
+    )
+    db.add(db_usuario)
+    db.commit()
+    db.refresh(db_usuario)
+    return db_usuario
+
+async def get_users(db: Session = Depends(get_db)):
+    return db.query(models.User).all()
+
+# ----------------------
+# Rotas para Autenticação
+# ----------------------
+async def login(request: schemas.LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == request.email).first()
+    if not user or user.senha_hash != hash_password(request.password):
+        raise HTTPException(status_code=401, detail="Email ou senha inválidos")
+    
+    return {
+        "id": user.id,
+        "nome": user.nome,
+        "email": user.email,
+        "perfil": user.perfil,
+        "access_token": "token_placeholder"
+    }
+
 def configure_routes(app: FastAPI):
     # Rotas para eventos
     app.post("/eventos/", response_model=schemas.EventoRead)(create_event)
@@ -77,6 +128,7 @@ def configure_routes(app: FastAPI):
     
     # Rotas para edições
     app.post("/edicoes/", response_model=schemas.EditionRead)(create_edition)
+    app.get("/edicoes/", response_model=List[schemas.EditionRead])(get_editions)
     
     # Rotas para autores
     app.post("/autores/", response_model=schemas.AuthorRead)(create_author)
@@ -84,3 +136,11 @@ def configure_routes(app: FastAPI):
     
     # Rotas para artigos
     app.post("/artigos/", response_model=schemas.ArticleRead)(create_article)
+    app.get("/artigos/", response_model=List[schemas.ArticleRead])(get_articles)
+    
+    # Rotas para usuários
+    app.post("/usuarios/", response_model=schemas.UserRead)(create_user)
+    app.get("/usuarios/", response_model=List[schemas.UserRead])(get_users)
+    
+    # Rotas para autenticação
+    app.post("/login/", response_model=schemas.LoginResponse)(login)

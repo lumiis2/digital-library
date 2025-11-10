@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend App</title>
+</head>
+<body>
+    <h1>Backend Message</h1>
+    <div id="message">Loading...</div>
+
+    <script>
+        async function fetchMessage() {
+            try {
+                const response = await fetch('http://127.0.0.1:8000/');
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+                document.getElementById('message').textContent = data.message;
+            } catch (error) {
+                document.getElementById('message').textContent = 'Error loading message: ' + error.message;
+            }
+        }
+
+        // Fetch message on page load
+        window.onload = fetchMessage;
+    </script>
+</body>
+</html>

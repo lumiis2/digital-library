@@ -37,12 +37,12 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // 🔹 Login
-  const login = async (email, password, perfil) => {
+  const login = async (email, password) => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/auth/login', {
+      const response = await fetch('http://127.0.0.1:8000/login/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, perfil }),
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
@@ -51,9 +51,9 @@ export const AuthProvider = ({ children }) => {
         throw new Error(data.detail || 'Login failed');
       }
 
-      setUser(data.user);
-      localStorage.setItem('authToken', data.token);  // MUDANÇA: 'authToken'
-      localStorage.setItem('user', JSON.stringify(data.user));
+      setUser(data);
+      localStorage.setItem('authToken', data.access_token);
+      localStorage.setItem('user', JSON.stringify(data));
 
       return { success: true };
     } catch (error) {
@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }) => {
   // 🔹 Registro
   const register = async (userData) => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/auth/register', {
+      const response = await fetch('http://127.0.0.1:8000/usuarios/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData),
@@ -76,7 +76,7 @@ export const AuthProvider = ({ children }) => {
         throw new Error(data.detail || 'Registration failed');
       }
 
-      return { success: true, message: data.message };
+      return { success: true, message: 'Usuário criado com sucesso' };
     } catch (error) {
       return { success: false, error: error.message };
     }

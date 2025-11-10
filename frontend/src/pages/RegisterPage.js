@@ -32,13 +32,7 @@ const RegisterPage = () => {
 
     setLoading(true);
     try {
-      // Opção A: endpoint único enviando perfil no body:
-      const url = "http://127.0.0.1:8000/api/auth/register";
-
-      // Opção B: endpoints distintos (descomente se preferir)
-      // const url = perfil === "admin"
-      //   ? "http://127.0.0.1:8000/admins"
-      //   : "http://127.0.0.1:8000/usuarios";
+      const url = "http://127.0.0.1:8000/usuarios/";
 
       const resposta = await fetch(url, {
         method: "POST",
@@ -46,21 +40,19 @@ const RegisterPage = () => {
         body: JSON.stringify({
           nome: inputs.nome,
           email: inputs.email,
-          // no backend, armazene hash. Aqui enviamos a senha em texto
-          // e o backend deve fazer o hash com segurança.
           senha_hash: inputs.senha,
-          perfil, // "usuario" | "admin"
+          perfil,
+          receive_notifications: true,
         }),
       });
 
       if (!resposta.ok) {
-        const msg = await resposta.text();
-        throw new Error(msg || "Falha no cadastro.");
+        const data = await resposta.json();
+        throw new Error(data.detail || "Falha no cadastro.");
       }
 
       const data = await resposta.json();
-      alert(`Cadastro realizado! ID: ${data.user.id}`);
-      // opcional: limpar
+      alert("Cadastro realizado com sucesso!");
       setInputs({ nome: "", email: "", senha: "" });
       setPerfil("");
     } catch (err) {
