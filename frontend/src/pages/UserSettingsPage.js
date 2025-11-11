@@ -1,43 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../components/common/AuthContext';
 import NotificationSettings from '../components/common/NotificationSettings';
 
 function UserSettingsPage() {
-  const [user, setUser] = useState(null);
+  const { user, getUserProfile } = useAuth();
+  const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        // Obter token do localStorage
-        const token = localStorage.getItem('authToken');
-        console.log("Token encontrado:", token); // Debug
-        
-        if (!token) {
+        if (!user || !user.id) {
           setError("Usuário não está logado");
           setLoading(false);
           return;
         }
 
-        // Fazer requisição para obter dados do usuário atual
-        const response = await fetch('http://localhost:8000/api/auth/me', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        console.log("Resposta da API:", response.status); // Debug
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.detail || 'Erro ao carregar dados do usuário');
+        const result = await getUserProfile();
+        
+        if (result.success) {
+          setProfileData(result.data);
+        } else {
+          setError(result.error || 'Erro ao carregar perfil');
         }
-
-        const userData = await response.json();
-        console.log("Dados do usuário:", userData); // Debug
-        setUser(userData);
       } catch (error) {
         console.error('Erro ao carregar usuário:', error);
         setError(error.message);
@@ -47,7 +34,7 @@ function UserSettingsPage() {
     };
 
     fetchUserData();
-  }, []);
+  }, [user, getUserProfile]);
 
   if (loading) {
     return (
@@ -73,6 +60,8 @@ function UserSettingsPage() {
       </div>
     );
   }
+
+  const displayUser = profileData || user;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -104,25 +93,25 @@ function UserSettingsPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Nome
               </label>
-              <p className="text-sm text-gray-900">{user?.nome}</p>
+              <p className="text-sm text-gray-900">{displayUser?.nome}</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Email
               </label>
-              <p className="text-sm text-gray-900">{user?.email}</p>
+              <p className="text-sm text-gray-900">{displayUser?.email}</p>
             </div>
-            {user?.perfil && (
+            {displayUser?.perfil && (
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Tipo de Usuário
                 </label>
                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                  user.perfil === 'admin' 
+                  displayUser.perfil === 'admin' 
                     ? 'bg-purple-100 text-purple-800' 
                     : 'bg-green-100 text-green-800'
                 }`}>
-                  {user.perfil === 'admin' ? 'Administrador' : 'Usuário'}
+                  {displayUser.perfil === 'admin' ? 'Administrador' : 'Usuário'}
                 </span>
               </div>
             )}

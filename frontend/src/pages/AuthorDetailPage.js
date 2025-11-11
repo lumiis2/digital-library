@@ -77,26 +77,47 @@ function AuthorDetailPage() {
       try {
         setLoading(true);
         setError(null);
-        console.log('Fetching author:', currentSlug); // Debug log
+        console.log('Fetching author:', currentSlug);
         
-        const response = await fetch(`http://localhost:8000/autores/${currentSlug}/artigos`);
+        // 1. Buscar dados do autor
+        const autorResponse = await fetch(`http://localhost:8000/autores/${currentSlug}`);
         
-        if (!response.ok) {
-          if (response.status === 404 && authorSlug) {
-            // Só redireciona se veio da rota /:authorSlug
+        if (!autorResponse.ok) {
+          if (autorResponse.status === 404 && authorSlug) {
             console.log('Author not found, trying as event:', authorSlug);
             navigate(`/eventos/${authorSlug}`, { replace: true });
             return;
           }
-          throw new Error(`Erro ${response.status}: Autor não encontrado`);
+          throw new Error(`Erro ${autorResponse.status}: Autor não encontrado`);
         }
         
-        const data = await response.json();
-        console.log('Author data:', data); // Debug log
+        const autorData = await autorResponse.json();
+        console.log('Author data:', autorData);
+        setAutor(autorData);
         
-        setAutor(data.autor);
-        setArtigosPorAno(data.artigos_por_ano || {});
-        setTotalArtigos(data.total_artigos || 0);
+        // 2. Buscar todos os artigos e filtrar pelos do autor
+        const artigosResponse = await fetch(`http://localhost:8000/artigos/`);
+        if (artigosResponse.ok) {
+          const artigos = await artigosResponse.json();
+          
+          // Filtrar artigos que têm este autor
+          const artigosDoAutor = artigos.filter(artigo => 
+            artigo.authors && artigo.authors.some(a => a.id === autorData.id)
+          );
+          
+          // Agrupar por ano
+          const agrupadoPorAno = {};
+          artigosDoAutor.forEach(artigo => {
+            const ano = artigo.edicao_id ? new Date().getFullYear() : 'Sem data'; // Ajuste conforme necessário
+            if (!agrupadoPorAno[ano]) {
+              agrupadoPorAno[ano] = [];
+            }
+            agrupadoPorAno[ano].push(artigo);
+          });
+          
+          setArtigosPorAno(agrupadoPorAno);
+          setTotalArtigos(artigosDoAutor.length);
+        }
         
       } catch (err) {
         console.error('Fetch error:', err);
