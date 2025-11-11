@@ -91,6 +91,29 @@ export const AuthProvider = ({ children }) => {
 
   const isAdmin = () => user?.perfil === 'admin';
 
+  // 🔹 Obter perfil do usuário logado
+  const getUserProfile = async () => {
+    if (!user || !user.id) {
+      return { success: false, error: "Usuário não autenticado" };
+    }
+
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/perfil/${user.id}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha ao carregar perfil');
+      }
+
+      const data = await response.json();
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -101,6 +124,7 @@ export const AuthProvider = ({ children }) => {
         isAdmin,
         isAuthenticated: !!user,
         loading,
+        getUserProfile,
       }}
     >
       {children}

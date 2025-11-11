@@ -121,6 +121,69 @@ async def login(request: schemas.LoginRequest, db: Session = Depends(get_db)):
         "access_token": "token_placeholder"
     }
 
+# ----------------------
+# Rotas para Perfil do Usuário
+# ----------------------
+async def get_user_profile(user_id: int, db: Session = Depends(get_db)):
+    """Retorna o perfil do usuário logado"""
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    return user
+
+async def get_current_user_profile(db: Session = Depends(get_db)):
+    """Retorna o perfil do usuário atualmente logado (via token)"""
+    # Por enquanto, retorna um placeholder
+    # TODO: Implementar autenticação via JWT token
+    raise HTTPException(status_code=401, detail="Token não fornecido")
+
+# ----------------------
+# Rotas para Obter por ID ou Slug
+# ----------------------
+async def get_event_by_id_or_slug(event_id: str, db: Session = Depends(get_db)):
+    """Retorna um evento por ID (número) ou slug (texto)"""
+    event = None
+    
+    # Tenta buscar por ID se for número
+    if event_id.isdigit():
+        event = db.query(models.Event).filter(models.Event.id == int(event_id)).first()
+    
+    # Se não encontrou, tenta por slug
+    if not event:
+        event = db.query(models.Event).filter(models.Event.slug == event_id).first()
+    
+    if not event:
+        raise HTTPException(status_code=404, detail="Evento não encontrado")
+    return event
+
+async def get_author_by_id_or_slug(author_id: str, db: Session = Depends(get_db)):
+    """Retorna um autor por ID (número) ou slug (texto)"""
+    author = None
+    
+    if author_id.isdigit():
+        author = db.query(models.Author).filter(models.Author.id == int(author_id)).first()
+    
+    if not author:
+        author = db.query(models.Author).filter(models.Author.slug == author_id).first()
+    
+    if not author:
+        raise HTTPException(status_code=404, detail="Autor não encontrado")
+    return author
+
+async def get_edition_by_id(edition_id: int, db: Session = Depends(get_db)):
+    """Retorna uma edição específica"""
+    edition = db.query(models.Edition).filter(models.Edition.id == edition_id).first()
+    if not edition:
+        raise HTTPException(status_code=404, detail="Edição não encontrada")
+    return edition
+
+async def get_article_by_id(article_id: int, db: Session = Depends(get_db)):
+    """Retorna um artigo específico"""
+    article = db.query(models.Article).filter(models.Article.id == article_id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Artigo não encontrado")
+    return article
+
 def configure_routes(app: FastAPI):
     # Rotas para eventos
     app.post("/eventos/", response_model=schemas.EventoRead)(create_event)
@@ -144,3 +207,13 @@ def configure_routes(app: FastAPI):
     
     # Rotas para autenticação
     app.post("/login/", response_model=schemas.LoginResponse)(login)
+    
+    # Rotas para perfil
+    app.get("/perfil/{user_id}", response_model=schemas.UserRead)(get_user_profile)
+    app.get("/me", response_model=schemas.UserRead)(get_current_user_profile)
+    
+    # Rotas para obter por ID ou slug (DEVEM VIR ANTES das rotas de lista genéricas)
+    app.get("/eventos/{event_id}", response_model=schemas.EventoRead)(get_event_by_id_or_slug)
+    app.get("/autores/{author_id}", response_model=schemas.AuthorRead)(get_author_by_id_or_slug)
+    app.get("/edicoes/{edition_id}", response_model=schemas.EditionRead)(get_edition_by_id)
+    app.get("/artigos/{article_id}", response_model=schemas.ArticleRead)(get_article_by_id)

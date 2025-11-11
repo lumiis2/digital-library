@@ -361,3 +361,45 @@ async def test_register_with_receive_notifications_false(client, test_db):
     user = test_db.query(User).filter(User.email == "testuser2@example.com").first()
     assert user is not None
     assert user.receive_notifications == 0
+
+@pytest.mark.asyncio
+async def test_author_slug_generation(client, test_db):
+    """Testa se o slug do autor é gerado corretamente"""
+    from backend.app.models import Author
+    
+    # Criar um autor
+    author = Author(nome="Davi", sobrenome="Freitas")
+    test_db.add(author)
+    test_db.commit()
+    
+    # Verificar se o slug foi gerado
+    assert author.slug is not None
+    assert author.slug == "davi-freitas"
+    print(f"✓ Slug gerado corretamente: {author.slug}")
+    
+    # Tentar acessar pelo slug
+    response = client.get(f"/autores/{author.slug}")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["nome"] == "Davi"
+    assert data["sobrenome"] == "Freitas"
+    print(f"✓ Autor encontrado pelo slug: {author.slug}")
+
+@pytest.mark.asyncio
+async def test_get_author_by_existing_slug(client, test_db):
+    """Testa acesso a um autor existente pelo slug"""
+    from backend.app.models import Author
+    
+    # Criar um autor com o mesmo slug do banco real
+    author = Author(nome="Davi", sobrenome="Freitas")
+    test_db.add(author)
+    test_db.commit()
+    
+    # Acessar pelo slug
+    response = client.get(f"/autores/{author.slug}")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["nome"] == "Davi"
+    assert data["sobrenome"] == "Freitas"
+    assert data["slug"] == "davi-freitas"
+    print(f"✓ Autor encontrado: {data['nome']} {data['sobrenome']} ({data['slug']})")
