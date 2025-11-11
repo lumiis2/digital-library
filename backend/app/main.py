@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .database import SessionLocal
+from .dependencies import get_db
 from .routes import configure_routes
 
 app = FastAPI()
@@ -15,11 +15,9 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
+# Configurar as rotas
 configure_routes(app)
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+@app.get("/")
+def read_root():
+    return {"message": "Hello World"}

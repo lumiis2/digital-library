@@ -8,7 +8,7 @@ const LoginPage = () => {
     const navigate = useNavigate();
     const { login } = useAuth(); // <-- use o contexto
 
-    const [inputs, setInputs] = useState({ email: "", senha_hash: "" });
+    const [inputs, setInputs] = useState({ email: "", password: "" });
     const [loading, setLoading] = useState(false);
     // const [erroPerfil, setErroPerfil] = useState("");
     const [erroLogin, setErroLogin] = useState(""); // novo estado para erros de login
@@ -21,16 +21,15 @@ const LoginPage = () => {
         event.preventDefault();
         setErroLogin(""); // limpa erro anterior
 
-        // Não precisa mais de seleção de perfil
         setLoading(true);
         try {
-            const result = await login(inputs.email, inputs.senha_hash);
+            const result = await login(inputs.email, inputs.password);
             if (result.success) {
                 navigate("/");
             } else {
                 setErroLogin(result.error);
             }
-            setInputs({ email: "", senha_hash: "" });
+            setInputs({ email: "", password: "" });
         } catch (erro) {
             setErroLogin("Erro de rede ao logar.");
         } finally {
@@ -71,8 +70,8 @@ const LoginPage = () => {
                             <div className="relative">
                                 <input
                                     type="password"
-                                    name="senha_hash"
-                                    value={inputs.senha_hash}
+                                    name="password"
+                                    value={inputs.password}
                                     onChange={handleChange}
                                     placeholder="Senha"
                                     disabled={inputsDesabilitados}

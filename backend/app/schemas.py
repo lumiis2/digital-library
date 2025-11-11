@@ -125,3 +125,10 @@ class NotificationSettings(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
+class LoginResponse(BaseModel):
+    id: int
+    nome: str
+    email: str
+    perfil: str
+    access_token: str
