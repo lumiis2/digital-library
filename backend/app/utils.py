@@ -2,6 +2,8 @@ import hashlib
 import unicodedata
 import re
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import smtplib
 import os
 from dotenv import load_dotenv
 
