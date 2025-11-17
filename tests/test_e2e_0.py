@@ -5,8 +5,9 @@ Testam fluxos completos do usuário através da aplicação
 import pytest
 import os
 import sys
+import logging
 
-# Define TEST_MODE antes de qualquer import
+# Define TEST_MODE não eh necessário
 os.environ["TEST_MODE"] = "1"
 
 # Adiciona backend ao path
@@ -15,7 +16,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 from fastapi.testclient import TestClient
 from backend.app.database import Base, engine, SessionLocal
 from backend.app.main import app
-from backend.app.models import User, Event, Edition, Author, Article
 import hashlib
 
 def hash_password(password: str) -> str:
@@ -62,7 +62,7 @@ async def test_e2e_usuario_completo(client, test_db):
             "nome": "João da Silva",
             "email": "joao@example.com",
             "senha_hash": "senha123",
-            "perfil": "usuario",
+            "perfil": "admin",
             "receive_notifications": True
         }
     )
@@ -75,7 +75,7 @@ async def test_e2e_usuario_completo(client, test_db):
         json={"email": "joao@example.com", "password": "senha123"}
     )
     assert login_response.status_code == 200
-    assert login_response.json()["perfil"] == "usuario"
+    assert login_response.json()["perfil"] == "admin"
     print("✓ Login realizado")
     
     # 3. Criar evento
