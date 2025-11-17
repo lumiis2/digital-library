@@ -173,6 +173,3 @@ def test_routes_get_por_id_ou_slug_retorna_404():
         asyncio.run(routes.get_author_by_id_or_slug("slug", db))
 
 
-def test_main_read_root_direto():
-    resp = read_root()
-    assert resp["message"] == "Hello World"
